@@ -1,9 +1,10 @@
 # -----------------------------
-# INVENTORY TRACKER (with delete)
+# INVENTORY TRACKER (with delete button)
 # -----------------------------
 with tab3:
-    st.header("Product Inventory")
+    st.header("📦 Product Inventory")
 
+    # Add new inventory item
     with st.form("inv_form"):
         item = st.text_input("Item Name")
         price = st.number_input("Price ($)", min_value=0.0)
@@ -18,24 +19,26 @@ with tab3:
                 "Photo": inv_photo.name if inv_photo else "None"
             }
             st.session_state.setdefault("inventory", []).append(inv_row)
-            st.success(f"Added to inventory: {item}")
+            st.success(f"Added: {item}")
 
-    inv_df = pd.DataFrame(st.session_state.get("inventory", []))
+    # Show inventory
+    inventory_data = st.session_state.get("inventory", [])
+    if inventory_data:
+        st.subheader("Your Inventory")
 
-    if not inv_df.empty:
-        st.subheader("Current Inventory")
-
-        # Create delete buttons for each item
-        for i, row in inv_df.iterrows():
-            cols = st.columns([4, 2, 2, 2, 1])
-            cols[0].write(f"📦 {row['Item']}")
-            cols[1].write(f"${row['Price']:.2f}")
-            cols[2].write(row["Status"])
-            cols[3].write(row["Photo"])
-            if cols[4].button("🗑️", key=f"delete_{i}"):
-                st.session_state["inventory"].pop(i)
+        for idx, item in enumerate(inventory_data):
+            col1, col2, col3, col4, col5 = st.columns([3, 2, 2, 2, 1])
+            col1.markdown(f"**{item['Item']}**")
+            col2.write(f"${item['Price']:.2f}")
+            col3.write(item["Status"])
+            col4.write(item["Photo"])
+            if col5.button("❌", key=f"del_{idx}"):
+                del st.session_state["inventory"][idx]
                 st.experimental_rerun()
 
-        # Download updated table
-        inv_csv = inv_df.to_csv(index=False).encode("utf-8")
+        # Download updated CSV
+        df = pd.DataFrame(inventory_data)
+        inv_csv = df.to_csv(index=False).encode("utf-8")
         st.download_button("📥 Download Inventory CSV", inv_csv, "inventory.csv", "text/csv")
+    else:
+        st.info("No inventory items yet.")
