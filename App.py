@@ -1,6 +1,5 @@
 import streamlit as st
 from fractions import Fraction
-import re
 
 st.set_page_config(page_title="All in One", layout="wide")
 st.title("📋 All in One")
@@ -88,16 +87,23 @@ with st.expander("➕ Add Item to Inventory"):
 
 # Display Inventory
 sorted_inventory = sorted(st.session_state.inventory, key=lambda x: x["name"].lower())
+delete_index = None
 
 for i, item in enumerate(sorted_inventory):
     col1, col2, col3, col4, col5 = st.columns([4, 2, 2, 2, 1])
     col1.write(item["name"])
     col2.write(f'Qty: {item["qty"]}')
     col3.write(f'${item["price"]:.2f}')
-    item["status"] = col4.selectbox("Status", ["For Sale", "Sold"], index=0 if item["status"] == "For Sale" else 1, key=f"status_{i}")
+    item["status"] = col4.selectbox("Status", ["For Sale", "Sold"],
+                                    index=0 if item["status"] == "For Sale" else 1,
+                                    key=f"status_{i}")
     if col5.button("🗑️", key=f"delete_{i}"):
-        st.session_state.inventory.remove(item)
-        st.experimental_rerun()
+        delete_index = i
+
+# Safely delete item after loop
+if delete_index is not None:
+    del st.session_state.inventory[delete_index]
+    st.experimental_rerun()
 
 # --- Tools & Materials ---
 st.header("🔧 Tool & Material Tracker")
@@ -107,12 +113,13 @@ with st.expander("➕ Add Tool or Material"):
     tm_type = st.selectbox("Type", ["Tool", "Material"], key="tm_type")
     tm_notes = st.text_area("Notes", key="tm_notes")
     if st.button("Add Tool/Material"):
-        st.session_state.tools.append({
-            "name": tm_name,
-            "type": tm_type,
-            "notes": tm_notes
-        })
-        st.success("Added.")
+        if tm_name:
+            st.session_state.tools.append({
+                "name": tm_name,
+                "type": tm_type,
+                "notes": tm_notes
+            })
+            st.success("Added.")
 
 # Display tools/materials
 for tm in st.session_state.tools:
