@@ -37,4 +37,5 @@ with tab3:
                 st.experimental_rerun()
 
         # Download updated table
-        inv_csv = inv_df.to_csv(index=False).encode("utf
+        inv_csv = inv_df.to_csv(index=False).encode("utf-8")
+        st.download_button("📥 Download Inventory CSV", inv_csv, "inventory.csv", "text/csv")
