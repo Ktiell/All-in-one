@@ -1,7 +1,7 @@
 import streamlit as st
 from datetime import datetime, timedelta
 
-# --- Page Setup and Custom Styling ---
+# Page config and custom styling
 st.set_page_config(page_title="All in One", layout="centered")
 st.markdown("""
 <style>
@@ -27,7 +27,7 @@ hr {
     background-color: #4f6f52;
     color: white;
     border-radius: 8px;
-    padding: 0.5rem 1rem;
+    padding: 0.4rem 1rem;
     border: none;
 }
 .stDownloadButton>button {
@@ -41,32 +41,35 @@ hr {
 st.markdown("<h1 style='text-align: center; margin-bottom: 0;'>All in One</h1>", unsafe_allow_html=True)
 st.markdown("<hr style='margin-top: 0;'>", unsafe_allow_html=True)
 
-# --- Initialize State ---
+# Initialize session state
 for key in ["inventory", "tools", "materials", "job_logs"]:
     if key not in st.session_state:
         st.session_state[key] = []
 if "clock_start" not in st.session_state:
     st.session_state.clock_start = None
 
-# --- Tabs ---
+# TABS
 tab1, tab2, tab3, tab4 = st.tabs(["Inventory", "Tools", "Materials", "Job Hours"])
 
 # === INVENTORY TAB ===
 with tab1:
     st.subheader("Inventory")
-    headers = st.columns([3, 1, 1, 2, 1])
-    headers[0].markdown("**Item**")
-    headers[1].markdown("**Qty**")
-    headers[2].markdown("**Price**")
-    headers[3].markdown("**Actions**")
-    headers[4].markdown("**Delete**")
+
+    # Table Header
+    header = st.columns([3, 1, 1, 2, 1])
+    header[0].markdown("**Item**")
+    header[1].markdown("**Qty**")
+    header[2].markdown("**Price**")
+    header[3].markdown("**Actions**")
+    header[4].markdown("**Delete**")
 
     for i, item in enumerate(st.session_state.inventory):
-        cols = st.columns([3, 1, 1, 2, 1])
-        cols[0].markdown(item.get("item", ""))
-        cols[1].markdown(str(item.get("qty", 0)))
-        cols[2].markdown(f"${item.get('price', 0.00):.2f}")
-        plus, minus = cols[3].columns(2)
+        row = st.columns([3, 1, 1, 2, 1])
+        row[0].write(item.get("item", ""))
+        row[1].write(str(item.get("qty", 0)))
+        row[2].write(f"${item.get('price', 0.00):.2f}")
+
+        plus, minus = row[3].columns(2)
         if plus.button("➕", key=f"inv_plus_{i}"):
             item["qty"] += 1
             st.rerun()
@@ -74,7 +77,8 @@ with tab1:
             if item["qty"] > 0:
                 item["qty"] -= 1
                 st.rerun()
-        if cols[4].button("🗑️", key=f"inv_del_{i}"):
+
+        if row[4].button("🗑️", key=f"inv_del_{i}"):
             st.session_state.inventory.pop(i)
             st.rerun()
 
@@ -85,7 +89,9 @@ with tab1:
             price = st.number_input("Price", min_value=0.0, step=0.01)
             if st.form_submit_button("Add Item") and name:
                 st.session_state.inventory.append({
-                    "item": name, "qty": int(qty), "price": float(price)
+                    "item": name,
+                    "qty": int(qty),
+                    "price": float(price)
                 })
                 st.success(f"Added: {name}")
                 st.rerun()
