@@ -2,6 +2,8 @@
 import streamlit as st
 from fractions import Fraction
 import re
+import time
+from datetime import datetime, timedelta
 
 st.set_page_config(page_title="All-in-One App", layout="wide")
 
@@ -18,8 +20,10 @@ if "tools" not in st.session_state:
     st.session_state.tools = []
 if "materials" not in st.session_state:
     st.session_state.materials = []
-if "logs" not in st.session_state:
-    st.session_state.logs = []
+if "clock_start" not in st.session_state:
+    st.session_state.clock_start = None
+if "job_hours" not in st.session_state:
+    st.session_state.job_hours = []
 
 # ---------------- CALCULATOR FUNCTIONS ---------------- #
 def parse_mixed_expression(expr):
@@ -55,7 +59,7 @@ def format_result(val, use_feet=False):
         return f"{whole if whole else ''} {fraction if fraction else ''}\"".strip()
 
 # ---------------- TABS ---------------- #
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["Inventory", "Tools", "Materials", "Jobsite Log", "Calculator"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["Inventory", "Tools", "Materials", "Job Hours", "Calculator"])
 
 # ---------------- INVENTORY TAB ---------------- #
 with tab1:
@@ -87,36 +91,50 @@ with tab3:
     if st.session_state.materials:
         st.dataframe(st.session_state.materials)
 
-# ---------------- JOBSITE LOG TAB ---------------- #
+# ---------------- JOB HOURS TAB ---------------- #
 with tab4:
-    st.subheader("Jobsite Log")
-    entry = st.text_area("Log Entry")
-    if st.button("Save Log Entry"):
-        st.session_state.logs.append(entry)
-    if st.session_state.logs:
-        for i, log in enumerate(st.session_state.logs[::-1]):
-            st.markdown(f"**Entry {len(st.session_state.logs)-i}:** {log}")
+    st.subheader("Job Hours Tracker")
+
+    if st.session_state.clock_start is None:
+        if st.button("Start Clock"):
+            st.session_state.clock_start = datetime.now()
+            st.success(f"Clock started at {st.session_state.clock_start.strftime('%I:%M %p')}")
+    else:
+        if st.button("End Clock"):
+            end_time = datetime.now()
+            duration = end_time - st.session_state.clock_start
+            st.session_state.job_hours.append({
+                "Start": st.session_state.clock_start.strftime("%Y-%m-%d %H:%M"),
+                "End": end_time.strftime("%Y-%m-%d %H:%M"),
+                "Duration": str(duration)
+            })
+            st.success(f"Clock stopped at {end_time.strftime('%I:%M %p')} â€” Duration: {duration}")
+            st.session_state.clock_start = None
+
+    if st.session_state.job_hours:
+        st.write("Recorded Job Hours:")
+        st.dataframe(st.session_state.job_hours)
 
 # ---------------- CALCULATOR TAB ---------------- #
 with tab5:
     st.subheader("Tape Measure Calculator")
     st.markdown("Use buttons or type expressions like `5 1/2 * 3 + 1/8`.")
 
-    # Entry
-    st.session_state.expression = st.text_input("Enter or edit input here:", value=st.session_state.expression)
+    st.session_state.expression = st.text_input("Type your math here:", value=st.session_state.expression)
 
-    # Button Grid
-    button_rows = [
+    button_grid = [
         ["7", "8", "9", "/"],
         ["4", "5", "6", "*"],
         ["1", "2", "3", "-"],
         ["0", ".", "C", "+"],
         ["1/16", "1/8", "1/4", "="]
     ]
-    for row in button_rows:
-        cols = st.columns(len(row))
+
+    st.markdown("### Buttons")
+    for row in button_grid:
+        cols = st.columns(4)
         for i, label in enumerate(row):
-            if cols[i].button(label, key=f"{row}_{i}"):
+            if cols[i].button(label, key=f"btn_{row}_{i}"):
                 if label == "C":
                     st.session_state.expression = ""
                     st.session_state.result = ""
