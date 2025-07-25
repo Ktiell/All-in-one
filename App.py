@@ -23,6 +23,8 @@ if "clock_start" not in st.session_state:
     st.session_state.clock_start = None
 if "job_hours" not in st.session_state:
     st.session_state.job_hours = []
+if "job_desc" not in st.session_state:
+    st.session_state.job_desc = ""
 
 # ---------------- HELPER FUNCTIONS ---------------- #
 def parse_mixed_expression(expr):
@@ -93,16 +95,15 @@ with tab3:
 # ---------------- JOB HOURS TAB ---------------- #
 with tab4:
     st.subheader("Job Hours Tracker")
-
     now = datetime.now()
 
     if st.session_state.clock_start is None:
         if st.button("Start Clock"):
             st.session_state.clock_start = now
-            st.experimental_rerun()
+            st.session_state.job_desc = ""
     else:
         st.success(f"Clock started at {st.session_state.clock_start.strftime('%I:%M %p')}")
-        desc = st.text_input("What are you working on?", key="job_desc")
+        st.session_state.job_desc = st.text_input("What are you working on?", value=st.session_state.job_desc)
         if st.button("End Clock"):
             end_time = datetime.now()
             duration = end_time - st.session_state.clock_start
@@ -110,11 +111,11 @@ with tab4:
                 "Start": st.session_state.clock_start,
                 "End": end_time,
                 "Duration": duration,
-                "Description": desc
+                "Description": st.session_state.job_desc
             })
             st.session_state.clock_start = None
+            st.session_state.job_desc = ""
             st.success(f"Session ended: {duration}")
-            st.experimental_rerun()
 
     # Totals
     this_week = this_month = timedelta()
