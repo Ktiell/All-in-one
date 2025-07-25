@@ -1,10 +1,9 @@
-
 import streamlit as st
 from fractions import Fraction
 
-st.set_page_config(page_title="All-in-One App", layout="centered")
+st.set_page_config(page_title="Tape Measure Calculator", layout="centered")
 
-# --- Session State Setup ---
+# --- Session State ---
 if "expression" not in st.session_state:
     st.session_state.expression = ""
 if "result" not in st.session_state:
@@ -14,7 +13,7 @@ if "use_feet" not in st.session_state:
 
 # --- Helper Functions ---
 def parse_tape_measure(value):
-    value = value.strip().replace('â€³', '').replace('"', '')
+    value = value.strip().replace('″', '').replace('"', '')
     if ' ' in value:
         whole, frac = value.split(' ')
         return Fraction(int(whole)) + Fraction(frac)
@@ -37,9 +36,9 @@ def fraction_to_tape_string(value, use_feet=False):
     if use_feet:
         feet = int(inches) // 12
         remaining_inches = inches - feet * 12
-        return f"{feet}' {format_inches(Fraction(remaining_inches))}""
+        return f"{feet}' {format_inches(Fraction(remaining_inches))}\""
     else:
-        return f"{format_inches(Fraction(inches))}""
+        return f"{format_inches(Fraction(inches))}\""
 
 def evaluate_expression(expr):
     try:
@@ -63,11 +62,12 @@ def evaluate_expression(expr):
     except Exception:
         return "Error"
 
-# --- Layout ---
+# --- UI ---
 st.title("Tape Measure Calculator")
-st.markdown("Enter tape-style expressions like: `3 1/2 + 1 1/8 - 5/16 * 2`")
+st.markdown("Type expressions like: `3 1/2 + 1 1/8 - 5/16 * 2`")
 
-st.session_state.expression = st.text_input("Enter your measurement math here:", value=st.session_state.expression)
+st.session_state.expression = st.text_input("Enter measurement math here:", value=st.session_state.expression)
+
 if st.button("Calculate"):
     st.session_state.result = evaluate_expression(st.session_state.expression)
 
