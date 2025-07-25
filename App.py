@@ -21,38 +21,36 @@ tabs = st.tabs(["Inventory", "Tools", "Materials", "Labor Log"])
 # --------------------
 with tabs[0]:
     st.subheader("Inventory")
-    status_filter = st.selectbox("Status", ["For Sale", "Sold"])
+
     name = st.text_input("Item Name")
     qty = st.number_input("Qty", 1, step=1)
     price = st.number_input("Price", 0.0, step=0.01)
-    
+
     if st.button("Add Inventory Item"):
-        st.session_state.inventory.append({"name": name, "qty": qty, "price": price, "status": status_filter})
+        st.session_state.inventory.append({"name": name, "qty": qty, "price": price})
         st.rerun()
 
-    for item in sorted(st.session_state.inventory, key=lambda x: x["name"]):
-        st.markdown(f"**{item['name']}** — Qty: {item['qty']} — ${item['price']:.2f} — {item['status']}")
-        col1, col2, col3, col4 = st.columns([1, 2, 3, 1])
-        
-        with col1:
-            if st.button("➖", key=f"dec_{item['name']}"):
-                if item["qty"] > 0:
-                    item["qty"] -= 1
+    st.markdown("### Current Inventory")
+
+    if not st.session_state.inventory:
+        st.info("No inventory items yet.")
+    else:
+        for item in sorted(st.session_state.inventory, key=lambda x: x["name"]):
+            col1, col2, col3, col4 = st.columns([3, 1, 2, 1])
+            col1.markdown(f"**{item['name']}**")
+            col2.markdown(f"**{item['qty']}**")
+            with col3:
+                if st.button("+", key=f"inc_{item['name']}"):
+                    item["qty"] += 1
                     st.rerun()
-        with col2:
-            new_qty = st.number_input(
-                label="Qty", min_value=0, value=item["qty"], step=1,
-                key=f"qty_input_{item['name']}"
-            )
-            if new_qty != item["qty"]:
-                item["qty"] = new_qty
-                st.rerun()
-        with col3:
-            item["status"] = st.selectbox("Status", ["For Sale", "Sold"], key=f"inv_status_{item['name']}")
-        with col4:
-            if st.button("Delete", key=f"inv_delete_{item['name']}"):
-                st.session_state.inventory = [i for i in st.session_state.inventory if i["name"] != item["name"]]
-                st.rerun()
+                if st.button("-", key=f"dec_{item['name']}"):
+                    if item["qty"] > 0:
+                        item["qty"] -= 1
+                        st.rerun()
+            with col4:
+                if st.button("Delete", key=f"inv_delete_{item['name']}"):
+                    st.session_state.inventory = [i for i in st.session_state.inventory if i["name"] != item["name"]]
+                    st.rerun()
 
 # --------------------
 # Tools Tab
