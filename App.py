@@ -35,20 +35,28 @@ with tabs[0]:
     if not st.session_state.inventory:
         st.info("No inventory items yet.")
     else:
+        headers = st.columns([3, 1, 1, 2, 1])
+        headers[0].markdown("**Item**")
+        headers[1].markdown("**Qty**")
+        headers[2].markdown("**Price**")
+        headers[3].markdown("**Actions**")
+        headers[4].markdown("")
+
         for item in sorted(st.session_state.inventory, key=lambda x: x["name"]):
-            col1, col2, col3, col4 = st.columns([3, 1, 2, 1])
-            col1.markdown(f"**{item['name']}**")
-            col2.markdown(f"**{item['qty']}**")
-            with col3:
-                if st.button("+", key=f"inc_{item['name']}"):
+            col1, col2, col3, col4, col5 = st.columns([3, 1, 1, 2, 1])
+            col1.write(item["name"])
+            col2.write(str(item["qty"]))
+            col3.write(f"${item['price']:.2f}")
+            with col4:
+                c1, c2, c3 = st.columns([1, 1, 1])
+                if c1.button("+", key=f"inc_{item['name']}"):
                     item["qty"] += 1
                     st.rerun()
-                if st.button("-", key=f"dec_{item['name']}"):
+                if c2.button("-", key=f"dec_{item['name']}"):
                     if item["qty"] > 0:
                         item["qty"] -= 1
                         st.rerun()
-            with col4:
-                if st.button("Delete", key=f"inv_delete_{item['name']}"):
+                if c3.button("X", key=f"del_{item['name']}"):
                     st.session_state.inventory = [i for i in st.session_state.inventory if i["name"] != item["name"]]
                     st.rerun()
 
