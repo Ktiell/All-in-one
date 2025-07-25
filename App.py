@@ -6,7 +6,7 @@ import pandas as pd
 st.set_page_config(page_title="All in One", layout="wide")
 st.markdown("## 📋 All in One")
 
-# Initialize session state
+# Session state
 if "inventory" not in st.session_state: st.session_state.inventory = []
 if "tools" not in st.session_state: st.session_state.tools = []
 if "materials" not in st.session_state: st.session_state.materials = []
@@ -29,15 +29,25 @@ with tabs[0]:
     if st.button("Add Inventory Item"):
         st.session_state.inventory.append({"name": name, "qty": qty, "price": price, "status": status_filter})
         st.rerun()
-    
-    for i, item in enumerate(sorted(st.session_state.inventory, key=lambda x: x["name"])):
-        st.text(f"{item['name']} - Qty: {item['qty']} - ${item['price']:.2f} - {item['status']}")
-        col1, col2 = st.columns(2)
+
+    for item in sorted(st.session_state.inventory, key=lambda x: x["name"]):
+        st.markdown(f"**{item['name']}** — Qty: {item['qty']} — ${item['price']:.2f} — {item['status']}")
+        col1, col2, col3, col4 = st.columns([1, 1, 3, 1])
+        
         with col1:
-            item["status"] = st.selectbox(f"Status for {item['name']}", ["For Sale", "Sold"], key=f"inv_status_{i}")
+            if st.button("➖", key=f"dec_{item['name']}"):
+                if item["qty"] > 0:
+                    item["qty"] -= 1
+                    st.rerun()
         with col2:
-            if st.button("Delete", key=f"inv_delete_{i}"):
-                st.session_state.inventory.pop(i)
+            if st.button("➕", key=f"inc_{item['name']}"):
+                item["qty"] += 1
+                st.rerun()
+        with col3:
+            item["status"] = st.selectbox("Status", ["For Sale", "Sold"], key=f"inv_status_{item['name']}")
+        with col4:
+            if st.button("Delete", key=f"inv_delete_{item['name']}"):
+                st.session_state.inventory = [i for i in st.session_state.inventory if i["name"] != item["name"]]
                 st.rerun()
 
 # --------------------
@@ -67,11 +77,11 @@ with tabs[2]:
         st.session_state.materials.append(material)
         st.rerun()
     
-    for i, m in enumerate(sorted(st.session_state.materials)):
+    for m in sorted(st.session_state.materials):
         col1, col2 = st.columns([3, 1])
         col1.text(m)
-        if col2.button("Delete", key=f"material_delete_{i}"):
-            st.session_state.materials.pop(i)
+        if col2.button("Delete", key=f"material_delete_{m}"):
+            st.session_state.materials.remove(m)
             st.rerun()
 
 # --------------------
