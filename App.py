@@ -32,7 +32,7 @@ with tabs[0]:
 
     for item in sorted(st.session_state.inventory, key=lambda x: x["name"]):
         st.markdown(f"**{item['name']}** — Qty: {item['qty']} — ${item['price']:.2f} — {item['status']}")
-        col1, col2, col3, col4 = st.columns([1, 1, 3, 1])
+        col1, col2, col3, col4 = st.columns([1, 2, 3, 1])
         
         with col1:
             if st.button("➖", key=f"dec_{item['name']}"):
@@ -40,8 +40,12 @@ with tabs[0]:
                     item["qty"] -= 1
                     st.rerun()
         with col2:
-            if st.button("➕", key=f"inc_{item['name']}"):
-                item["qty"] += 1
+            new_qty = st.number_input(
+                label="Qty", min_value=0, value=item["qty"], step=1,
+                key=f"qty_input_{item['name']}"
+            )
+            if new_qty != item["qty"]:
+                item["qty"] = new_qty
                 st.rerun()
         with col3:
             item["status"] = st.selectbox("Status", ["For Sale", "Sold"], key=f"inv_status_{item['name']}")
