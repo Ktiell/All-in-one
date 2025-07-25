@@ -26,71 +26,8 @@ if "job_hours" not in st.session_state:
 if "job_desc" not in st.session_state:
     st.session_state.job_desc = ""
 
-# ---------------- HELPER FUNCTIONS ---------------- #
-def parse_mixed_expression(expr):
-    expr = expr.replace("Ã—", "*").replace("Ã·", "/")
-    expr = re.sub(r'(\d+)\s+(\d+/\d+)', r'(\1+\2)', expr)
-    expr = re.sub(r'(\d+/\d+)', r'Fraction("\1")', expr)
-    return expr
-
-def evaluate_expression(expr):
-    try:
-        parsed = parse_mixed_expression(expr)
-        result = eval(parsed, {"Fraction": Fraction})
-        return result
-    except:
-        return "Error"
-
-def format_result(val, use_feet=False):
-    if val == "Error":
-        return "Error"
-    inches = float(val)
-    rounded = round(inches * 16) / 16
-    whole = int(rounded)
-    remainder = rounded - whole
-    fraction = Fraction(remainder).limit_denominator(16)
-    if use_feet:
-        feet = whole // 12
-        inch = whole % 12
-        result = f"{feet}'"
-        if inch or fraction:
-            result += f" {inch if inch else ''} {fraction if fraction else ''}\""
-        return result.strip()
-    else:
-        return f"{whole if whole else ''} {fraction if fraction else ''}\"".strip()
-
 # ---------------- TABS ---------------- #
 tab1, tab2, tab3, tab4, tab5 = st.tabs(["Inventory", "Tools", "Materials", "Job Hours", "Calculator"])
-
-# ---------------- INVENTORY TAB ---------------- #
-with tab1:
-    st.subheader("Inventory")
-    name = st.text_input("Item Name")
-    qty = st.number_input("Quantity", min_value=0, step=1)
-    if st.button("Add to Inventory"):
-        st.session_state.inventory.append({"Item": name, "Qty": qty})
-    if st.session_state.inventory:
-        st.dataframe(st.session_state.inventory)
-
-# ---------------- TOOLS TAB ---------------- #
-with tab2:
-    st.subheader("Tools")
-    tool = st.text_input("Tool Name")
-    cond = st.selectbox("Condition", ["New", "Used", "Needs Repair"])
-    if st.button("Add Tool"):
-        st.session_state.tools.append({"Tool": tool, "Condition": cond})
-    if st.session_state.tools:
-        st.dataframe(st.session_state.tools)
-
-# ---------------- MATERIALS TAB ---------------- #
-with tab3:
-    st.subheader("Materials")
-    mat = st.text_input("Material Type")
-    amt = st.text_input("Amount (e.g. 3 boards, 2 sheets)")
-    if st.button("Add Material"):
-        st.session_state.materials.append({"Material": mat, "Amount": amt})
-    if st.session_state.materials:
-        st.dataframe(st.session_state.materials)
 
 # ---------------- JOB HOURS TAB ---------------- #
 with tab4:
@@ -98,12 +35,12 @@ with tab4:
     now = datetime.now()
 
     if st.session_state.clock_start is None:
+        st.session_state.job_desc = st.text_input("What are you working on?")
         if st.button("Start Clock"):
             st.session_state.clock_start = now
-            st.session_state.job_desc = ""
     else:
         st.success(f"Clock started at {st.session_state.clock_start.strftime('%I:%M %p')}")
-        st.session_state.job_desc = st.text_input("What are you working on?", value=st.session_state.job_desc)
+        st.write(f"Description: {st.session_state.job_desc}")
         if st.button("End Clock"):
             end_time = datetime.now()
             duration = end_time - st.session_state.clock_start
@@ -130,15 +67,22 @@ with tab4:
 
     if st.session_state.job_hours:
         st.write("Job History")
-        history = [{
-            "Start": e["Start"].strftime("%Y-%m-%d %I:%M %p"),
-            "End": e["End"].strftime("%Y-%m-%d %I:%M %p"),
-            "Hours": round(e["Duration"].total_seconds() / 3600, 2),
-            "Description": e["Description"]
-        } for e in st.session_state.job_hours]
-        st.dataframe(history)
+        for i, entry in enumerate(reversed(st.session_state.job_hours)):
+            idx = len(st.session_state.job_hours) - 1 - i
+            col1, col2 = st.columns([6, 1])
+            with col1:
+                st.markdown(
+                    f"**Start:** {entry['Start'].strftime('%Y-%m-%d %I:%M %p')} | "
+                    f"**End:** {entry['End'].strftime('%Y-%m-%d %I:%M %p')} | "
+                    f"**Hours:** {round(entry['Duration'].total_seconds() / 3600, 2)} | "
+                    f"**Note:** {entry['Description']}"
+                )
+            with col2:
+                if st.button("ðŸ—‘ï¸", key=f"del_{idx}"):
+                    del st.session_state.job_hours[idx]
+                    st.experimental_rerun()
 
-# ---------------- CALCULATOR TAB ---------------- #
+# ---------------- CALCULATOR PLACEHOLDER ---------------- #
 with tab5:
     st.subheader("Tape Measure Calculator")
-    st.markdown("ðŸ› ï¸ Calculator fix coming next... layout and lag improvements will be added.")
+    st.markdown("ðŸ› ï¸ Calculator fix coming next...")
