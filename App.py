@@ -1,8 +1,7 @@
 import streamlit as st
-import pandas as pd
 from datetime import datetime, timedelta
 
-# Page config and custom styling
+# --- Page Setup and Custom Styling ---
 st.set_page_config(page_title="All in One", layout="centered")
 st.markdown("""
 <style>
@@ -42,14 +41,14 @@ hr {
 st.markdown("<h1 style='text-align: center; margin-bottom: 0;'>All in One</h1>", unsafe_allow_html=True)
 st.markdown("<hr style='margin-top: 0;'>", unsafe_allow_html=True)
 
-# === Session State Setup ===
+# --- Initialize State ---
 for key in ["inventory", "tools", "materials", "job_logs"]:
     if key not in st.session_state:
         st.session_state[key] = []
 if "clock_start" not in st.session_state:
     st.session_state.clock_start = None
 
-# === TABS ===
+# --- Tabs ---
 tab1, tab2, tab3, tab4 = st.tabs(["Inventory", "Tools", "Materials", "Job Hours"])
 
 # === INVENTORY TAB ===
@@ -62,30 +61,32 @@ with tab1:
     headers[3].markdown("**Actions**")
     headers[4].markdown("**Delete**")
 
-    for i, inv in enumerate(st.session_state.inventory):
+    for i, item in enumerate(st.session_state.inventory):
         cols = st.columns([3, 1, 1, 2, 1])
-        cols[0].markdown(inv.get("item", ""))
-        cols[1].markdown(str(inv.get("qty", 0)))
-        cols[2].markdown(f"${inv.get('price', 0.00):.2f}")
+        cols[0].markdown(item.get("item", ""))
+        cols[1].markdown(str(item.get("qty", 0)))
+        cols[2].markdown(f"${item.get('price', 0.00):.2f}")
         plus, minus = cols[3].columns(2)
-        if plus.button("➕", key=f"plus_{i}"):
-            st.session_state.inventory[i]["qty"] += 1
+        if plus.button("➕", key=f"inv_plus_{i}"):
+            item["qty"] += 1
             st.rerun()
-        if minus.button("➖", key=f"minus_{i}"):
-            if st.session_state.inventory[i]["qty"] > 0:
-                st.session_state.inventory[i]["qty"] -= 1
+        if minus.button("➖", key=f"inv_minus_{i}"):
+            if item["qty"] > 0:
+                item["qty"] -= 1
                 st.rerun()
-        if cols[4].button("🗑️", key=f"del_{i}"):
+        if cols[4].button("🗑️", key=f"inv_del_{i}"):
             st.session_state.inventory.pop(i)
             st.rerun()
 
     with st.expander("➕ Add Inventory Item"):
-        with st.form("add_inventory_form"):
+        with st.form("add_inventory"):
             name = st.text_input("Item Name")
             qty = st.number_input("Quantity", min_value=0, step=1)
             price = st.number_input("Price", min_value=0.0, step=0.01)
-            if st.form_submit_button("Add Item"):
-                st.session_state.inventory.append({"item": name, "qty": int(qty), "price": float(price)})
+            if st.form_submit_button("Add Item") and name:
+                st.session_state.inventory.append({
+                    "item": name, "qty": int(qty), "price": float(price)
+                })
                 st.success(f"Added: {name}")
                 st.rerun()
 
@@ -97,13 +98,13 @@ with tab2:
             name = st.text_input("Tool Name")
             qty = st.number_input("Quantity", min_value=0, step=1, key="tool_qty")
             price = st.number_input("Price", min_value=0.0, step=0.01, key="tool_price")
-            if st.form_submit_button("Add Tool"):
+            if st.form_submit_button("Add Tool") and name:
                 st.session_state.tools.append({"item": name, "qty": int(qty), "price": float(price)})
                 st.success(f"Added tool: {name}")
                 st.rerun()
     for i, tool in enumerate(st.session_state.tools):
         st.write(f"{tool['item']} — Qty: {tool['qty']} — ${tool['price']:.2f}")
-        if st.button("🗑️", key=f"del_tool_{i}"):
+        if st.button("🗑️", key=f"tool_del_{i}"):
             st.session_state.tools.pop(i)
             st.rerun()
 
@@ -115,13 +116,13 @@ with tab3:
             name = st.text_input("Material Name")
             qty = st.number_input("Quantity", min_value=0, step=1, key="mat_qty")
             price = st.number_input("Price", min_value=0.0, step=0.01, key="mat_price")
-            if st.form_submit_button("Add Material"):
+            if st.form_submit_button("Add Material") and name:
                 st.session_state.materials.append({"item": name, "qty": int(qty), "price": float(price)})
                 st.success(f"Added material: {name}")
                 st.rerun()
     for i, mat in enumerate(st.session_state.materials):
         st.write(f"{mat['item']} — Qty: {mat['qty']} — ${mat['price']:.2f}")
-        if st.button("🗑️", key=f"del_mat_{i}"):
+        if st.button("🗑️", key=f"mat_del_{i}"):
             st.session_state.materials.pop(i)
             st.rerun()
 
@@ -136,21 +137,36 @@ with tab4:
         st.markdown(f"**Started:** {st.session_state.clock_start.strftime('%I:%M:%S %p')}")
         if st.button("End Clock"):
             end = datetime.now()
-            duration = (end - st.session_state.clock_start).total_seconds() / 60
+            duration = int((end - st.session_state.clock_start).total_seconds() / 60)
             st.session_state.job_logs.append({
                 "desc": desc or "No description",
                 "start": st.session_state.clock_start,
                 "end": end,
-                "minutes": int(duration)
+                "minutes": duration
             })
             st.session_state.clock_start = None
-            st.success(f"Logged {int(duration)} minutes.")
+            st.success(f"Logged {duration} minutes.")
             st.rerun()
 
     st.markdown("### Log History")
     now = datetime.now()
-    week_total, month_total = 0, 0
+    week_total = 0
+    month_total = 0
+
     for i, log in enumerate(st.session_state.job_logs):
-        start = log["start"]
-        time_str = start.strftime('%m/%d %I:%M %p') if isinstance(start, datetime) else "Unknown"
-        st.write(f"- {log['desc']} | {log['minutes']} min | {
+        task = log.get("desc", "No description")
+        minutes = log.get("minutes", 0)
+        start_time = log.get("start")
+        time_str = start_time.strftime('%m/%d %I:%M %p') if isinstance(start_time, datetime) else "Unknown"
+        st.write(f"- {task} | {minutes} min | {time_str}")
+        if st.button("Delete", key=f"log_del_{i}"):
+            st.session_state.job_logs.pop(i)
+            st.rerun()
+        if isinstance(start_time, datetime):
+            if start_time.date() >= (now - timedelta(days=7)).date():
+                week_total += minutes
+            if start_time.month == now.month:
+                month_total += minutes
+
+    st.markdown(f"**This Week:** {round(week_total/60, 2)} hrs")
+    st.markdown(f"**This Month:** {round(month_total/60, 2)} hrs")
