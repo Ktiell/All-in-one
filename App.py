@@ -1,140 +1,143 @@
 import streamlit as st
 from datetime import datetime, timedelta
+from fractions import Fraction
 
 st.set_page_config(page_title="All in One", layout="wide")
-st.title("📋 All-in-One App")
 
 # Initialize session state
-if "inventory" not in st.session_state: st.session_state.inventory = []
-if "tools" not in st.session_state: st.session_state.tools = []
-if "materials" not in st.session_state: st.session_state.materials = []
-if "labor_log" not in st.session_state: st.session_state.labor_log = []
-if "clock" not in st.session_state: st.session_state.clock = {"is_running": False, "start": None}
-if "task_desc" not in st.session_state: st.session_state.task_desc = ""
+for key in ["inventory", "tools", "materials", "job_logs", "clock_start"]:
+    if key not in st.session_state:
+        st.session_state[key] = []
 
-tabs = st.tabs(["Inventory", "Tools", "Materials", "Labor Log"])
+if "clock_start" not in st.session_state:
+    st.session_state.clock_start = None
 
-# --------------------
-# Inventory Tab
-# --------------------
-with tabs[0]:
-    st.header("Add Inventory Item")
-    with st.form("add_item_form", clear_on_submit=True):
-        name = st.text_input("Item Name")
-        qty = st.number_input("Quantity", min_value=0, step=1)
-        price = st.number_input("Price", min_value=0.0, format="%.2f")
-        submitted = st.form_submit_button("Add Inventory Item")
-        if submitted:
-            st.session_state.inventory.append({
-                "name": name,
-                "qty": qty,
-                "price": price
-            })
+# --- Helper Functions ---
+def render_table(data, key_prefix):
+    headers = ["Item", "Qty", "Price", "Add", "Remove", "Delete"]
+    header_cols = st.columns([2, 1, 1, 1, 1, 1])
+    for col, header in zip(header_cols, headers):
+        col.markdown(f"**{header}**")
 
-    st.header("Current Inventory")
-    if st.session_state.inventory:
-        cols = st.columns([3, 2, 2, 1.5, 1.5, 1.5])
-        for col, header in zip(cols, ["Item", "Qty", "Price", "Add", "Remove", "Delete"]):
-            col.markdown(f"**{header}**")
+    for i, entry in enumerate(data):
+        cols = st.columns([2, 1, 1, 1, 1, 1])
+        cols[0].markdown(entry["item"])
+        cols[1].markdown(str(entry["qty"]))
+        cols[2].markdown(f"${entry['price']:.2f}")
 
-        for i, item in enumerate(st.session_state.inventory):
-            cols = st.columns([3, 2, 2, 1.5, 1.5, 1.5])
-            cols[0].write(item["name"])
-            cols[1].write(str(item["qty"]))
-            cols[2].write(f"${item['price']:.2f}")
-            if cols[3].button("➕", key=f"add_{i}"):
-                item["qty"] += 1
-            if cols[4].button("➖", key=f"remove_{i}"):
-                if item["qty"] > 0:
-                    item["qty"] -= 1
-            if cols[5].button("❌", key=f"delete_{i}"):
-                st.session_state.inventory.pop(i)
-                st.experimental_rerun()
-    else:
-        st.info("No inventory items yet.")
+        if cols[3].button("+", key=f"{key_prefix}_add_{i}"):
+            entry["qty"] += 1
+        if cols[4].button("-", key=f"{key_prefix}_remove_{i}"):
+            if entry["qty"] > 0:
+                entry["qty"] -= 1
+        if cols[5].button("Delete", key=f"{key_prefix}_delete_{i}"):
+            data.pop(i)
+            st.experimental_rerun()
 
-# --------------------
-# Tools Tab
-# --------------------
-with tabs[1]:
+def add_item_form(label, data_key):
+    with st.expander(f"Add {label} Item"):
+        with st.form(f"{data_key}_form"):
+            item = st.text_input("Item Name", key=f"{data_key}_name")
+            qty = st.number_input("Quantity", min_value=0, step=1, key=f"{data_key}_qty")
+            price = st.number_input("Price", min_value=0.0, step=0.01, key=f"{data_key}_price")
+            if st.form_submit_button("Add Item") and item:
+                st.session_state[data_key].append({
+                    "item": item,
+                    "qty": int(qty),
+                    "price": float(price)
+                })
+                st.success(f"{label} item added!")
+
+# --- App Tabs ---
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["Inventory", "Tools", "Materials", "Job Hours", "Calculator"])
+
+# --- Inventory Tab ---
+with tab1:
+    st.header("Inventory")
+    render_table(st.session_state.inventory, "inv")
+    add_item_form("Inventory", "inventory")
+
+# --- Tools Tab ---
+with tab2:
     st.header("Tools")
-    new_tool = st.text_input("Add Tool", key="tool_input")
-    if st.button("Add Tool"):
-        st.session_state.tools.append(new_tool)
-        st.experimental_rerun()
+    render_table(st.session_state.tools, "tool")
+    add_item_form("Tool", "tools")
 
-    for i, tool in enumerate(sorted(st.session_state.tools)):
-        col1, col2 = st.columns([4, 1])
-        col1.write(tool)
-        if col2.button("Delete", key=f"del_tool_{i}"):
-            st.session_state.tools.pop(i)
-            st.experimental_rerun()
-
-# --------------------
-# Materials Tab
-# --------------------
-with tabs[2]:
+# --- Materials Tab ---
+with tab3:
     st.header("Materials")
-    new_mat = st.text_input("Add Material", key="mat_input")
-    if st.button("Add Material"):
-        st.session_state.materials.append(new_mat)
-        st.experimental_rerun()
+    render_table(st.session_state.materials, "mat")
+    add_item_form("Material", "materials")
 
-    for i, mat in enumerate(sorted(st.session_state.materials)):
-        col1, col2 = st.columns([4, 1])
-        col1.write(mat)
-        if col2.button("Delete", key=f"del_mat_{i}"):
-            st.session_state.materials.remove(m)
-            st.experimental_rerun()
-
-# --------------------
-# Labor Log Tab
-# --------------------
-with tabs[3]:
+# --- Job Hours Tab ---
+with tab4:
     st.header("Labor Log")
+    desc = st.text_input("Job Description", key="job_desc")
 
-    st.session_state.task_desc = st.text_input("Task Description", value=st.session_state.task_desc)
-
-    if not st.session_state.clock["is_running"]:
+    if st.session_state.clock_start is None:
         if st.button("Start Clock"):
-            st.session_state.clock["is_running"] = True
-            st.session_state.clock["start"] = datetime.now()
-            st.experimental_rerun()
+            st.session_state.clock_start = datetime.now()
     else:
-        st.success("Clock running...")
-        if st.button("Stop Clock"):
+        st.write(f"**Started:** {st.session_state.clock_start.strftime('%I:%M:%S %p')}")
+        if st.button("End Clock"):
             end_time = datetime.now()
-            duration = (end_time - st.session_state.clock["start"]).total_seconds() / 3600
-            st.session_state.labor_log.append({
-                "task": st.session_state.task_desc,
-                "start": st.session_state.clock["start"],
+            duration = end_time - st.session_state.clock_start
+            minutes = round(duration.total_seconds() / 60)
+            st.session_state.job_logs.append({
+                "desc": desc if desc else "No description",
+                "start": st.session_state.clock_start,
                 "end": end_time,
-                "hours": round(duration, 2)
+                "minutes": minutes
             })
-            st.session_state.clock["is_running"] = False
-            st.session_state.clock["start"] = None
-            st.session_state.task_desc = ""
+            st.session_state.clock_start = None
+            st.success("Job logged!")
+
+    st.markdown("### Job Log History")
+    total_week = 0
+    total_month = 0
+    now = datetime.now()
+    for i, log in enumerate(st.session_state.job_logs):
+        st.write(f"- **{log['desc']}**: {log['minutes']} min ({log['start'].strftime('%m/%d %I:%M %p')})")
+        if st.button("Delete", key=f"del_log_{i}"):
+            st.session_state.job_logs.pop(i)
             st.experimental_rerun()
+        if log["start"].date() >= (now - timedelta(days=7)).date():
+            total_week += log["minutes"]
+        if log["start"].month == now.month and log["start"].year == now.year:
+            total_month += log["minutes"]
 
-    # Summary
-    today = datetime.now().date()
-    week_start = today - timedelta(days=today.weekday())
-    month_start = today.replace(day=1)
-    year_start = today.replace(month=1, day=1)
+    st.markdown(f"**Total This Week:** {round(total_week/60, 2)} hrs")
+    st.markdown(f"**Total This Month:** {round(total_month/60, 2)} hrs")
 
-    hours_today = sum(e["hours"] for e in st.session_state.labor_log if e["start"].date() == today)
-    hours_week = sum(e["hours"] for e in st.session_state.labor_log if e["start"].date() >= week_start)
-    hours_month = sum(e["hours"] for e in st.session_state.labor_log if e["start"].date() >= month_start)
-    hours_year = sum(e["hours"] for e in st.session_state.labor_log if e["start"].date() >= year_start)
+# --- Tape Measure Calculator ---
+with tab5:
+    st.header("Tape Measure Calculator")
+    st.markdown("Add, subtract, multiply, or divide tape measure values like `3 1/4 + 1 1/8`")
 
-    st.write(f"**Hours Today:** {hours_today:.2f} hrs")
-    st.write(f"**Hours This Week:** {hours_week:.2f} hrs")
-    st.write(f"**Hours This Month:** {hours_month:.2f} hrs")
-    st.write(f"**Hours This Year:** {hours_year:.2f} hrs")
+    def parse_fraction(s):
+        s = s.strip()
+        if ' ' in s:
+            whole, frac = s.split()
+            return Fraction(int(whole)) + Fraction(frac)
+        else:
+            return Fraction(s)
 
-    st.write("### Logged Sessions")
-    for i, log in enumerate(st.session_state.labor_log):
-        st.write(f"{log['task']} | {log['start'].strftime('%Y-%m-%d %H:%M')} – {log['end'].strftime('%H:%M')} | {log['hours']:.2f} hrs")
-        if st.button("Delete Entry", key=f"del_log_{i}"):
-            st.session_state.labor_log.pop(i)
-            st.experimental_rerun()
+    expr = st.text_input("Enter equation:", placeholder="e.g. 3 3/4 + 1 1/8")
+
+    if expr:
+        try:
+            for op in ["+", "-", "*", "/"]:
+                if op in expr:
+                    left, right = expr.split(op)
+                    a = parse_fraction(left)
+                    b = parse_fraction(right)
+                    result = eval(f"a {op} b")
+                    inches = int(result)
+                    frac = result - inches
+                    # Convert to 1/16ths
+                    rounded = round(frac * 16)
+                    output = f"{inches} {rounded}/16" if inches > 0 else f"{rounded}/16"
+                    st.success(f"Result: {output}")
+                    break
+        except:
+            st.error("Invalid input. Use formats like `1/2`, `2 1/4`, etc.")
