@@ -1,149 +1,150 @@
 import streamlit as st
-import pandas as pd
-from datetime import datetime
+import datetime
 
-# Page config
-st.set_page_config(page_title="All in One", layout="centered")
+# App title
+st.set_page_config(page_title="All in One", layout="wide")
+st.markdown("<h1 style='text-align: center;'>All in One</h1>", unsafe_allow_html=True)
 
-# Custom style
-st.markdown("""
-<style>
-.stButton>button {
-    background-color: #4f6f52;
-    color: white;
-    border-radius: 8px;
-    padding: 0.3rem 1rem;
-    margin: 0.1rem;
-}
-.stTextInput>div>input {
-    padding: 0.4rem;
-}
-</style>
-""", unsafe_allow_html=True)
-
-# Init session state
-if "inventory" not in st.session_state:
+# Initialize session state
+if 'inventory' not in st.session_state:
     st.session_state.inventory = []
-if "tools" not in st.session_state:
+
+if 'tools' not in st.session_state:
     st.session_state.tools = []
-if "materials" not in st.session_state:
+
+if 'materials' not in st.session_state:
     st.session_state.materials = []
-if "job_logs" not in st.session_state:
-    st.session_state.job_logs = []
-if "clock_running" not in st.session_state:
-    st.session_state.clock_running = False
-    st.session_state.start_time = None
 
-# Tabs
-tab1, tab2, tab3, tab4 = st.tabs(["Inventory", "Tools", "Materials", "Job Hours"])
+if 'job_log' not in st.session_state:
+    st.session_state.job_log = []
 
-# ---------------- INVENTORY ----------------
-with tab1:
-    st.header("Inventory")
-    with st.form("add_inventory"):
-        c1, c2, c3 = st.columns([3, 1, 2])
-        item = c1.text_input("Item")
-        qty = c2.number_input("Qty", min_value=0, step=1)
-        price = c3.number_input("Price", min_value=0.0, step=0.5)
-        if st.form_submit_button("Add"):
-            if item:
-                st.session_state.inventory.append({"item": item, "qty": qty, "price": price})
+# Inventory tab
+def inventory_tab():
+    st.subheader("Inventory")
+    with st.form(key="inventory_form"):
+        item = st.text_input("Item")
+        qty = st.number_input("Quantity", step=1, min_value=0)
+        price = st.number_input("Price", step=0.01, min_value=0.0)
+        submitted = st.form_submit_button("Add")
+        if submitted and item:
+            st.session_state.inventory.append({"item": item, "qty": qty, "price": price})
 
-    if st.session_state.inventory:
-        st.subheader("Current Inventory")
-        header = st.columns([3, 1, 2, 1, 1, 1])
-        header[0].write("**Item**")
-        header[1].write("**Qty**")
-        header[2].write("**Price**")
-        header[3].write("**➕**")
-        header[4].write("**➖**")
-        header[5].write("**🗑️**")
+    st.markdown("### Current Inventory")
+    headers = ["Item", "Qty", "Price", "Actions"]
+    for col in st.columns(len(headers)):
+        col.markdown(f"**{headers[st.columns(len(headers)).index(col)]}**")
 
-        for i, entry in enumerate(st.session_state.inventory):
-            row = st.columns([3, 1, 2, 1, 1, 1])
-            row[0].write(entry["item"])
-            row[1].write(entry["qty"])
-            row[2].write(f"${entry['price']:.2f}")
-            if row[3].button("+", key=f"add_{i}"):
-                st.session_state.inventory[i]["qty"] += 1
-            if row[4].button("-", key=f"sub_{i}"):
-                st.session_state.inventory[i]["qty"] = max(0, entry["qty"] - 1)
-            if row[5].button("🗑️", key=f"del_{i}"):
+    for i, inv in enumerate(st.session_state.inventory):
+        cols = st.columns(4)
+        cols[0].write(inv['item'])
+        cols[1].write(inv['qty'])
+        cols[2].write(f"${inv['price']:.2f}")
+        with cols[3]:
+            col1, col2, col3 = st.columns(3)
+            if col1.button("➕", key=f"inc_{i}"):
+                inv['qty'] += 1
+            if col2.button("➖", key=f"dec_{i}") and inv['qty'] > 0:
+                inv['qty'] -= 1
+            if col3.button("🗑️", key=f"del_{i}"):
                 st.session_state.inventory.pop(i)
                 st.experimental_rerun()
-    else:
-        st.info("No inventory yet.")
 
-# ---------------- TOOLS ----------------
-with tab2:
-    st.header("Tools")
-    tool = st.text_input("Add Tool", key="tool_input")
-    if st.button("Add Tool"):
-        if tool:
-            st.session_state.tools.append(tool)
-            st.experimental_rerun()
-    for i, t in enumerate(st.session_state.tools):
-        cols = st.columns([6, 1])
-        cols[0].write(t)
-        if cols[1].button("🗑️", key=f"tool_del_{i}"):
+# Tools tab
+def tools_tab():
+    st.subheader("Tools")
+    with st.form(key="tools_form"):
+        tool = st.text_input("Tool name")
+        qty = st.number_input("Quantity", step=1, min_value=0, key="tool_qty")
+        add = st.form_submit_button("Add")
+        if add and tool:
+            st.session_state.tools.append({"tool": tool, "qty": qty})
+
+    st.markdown("### Tool List")
+    for i, tool in enumerate(st.session_state.tools):
+        cols = st.columns([4, 1, 1])
+        cols[0].write(tool["tool"])
+        cols[1].write(tool["qty"])
+        if cols[2].button("🗑️", key=f"tool_del_{i}"):
             st.session_state.tools.pop(i)
             st.experimental_rerun()
 
-# ---------------- MATERIALS ----------------
-with tab3:
-    st.header("Materials")
-    material = st.text_input("Add Material", key="mat_input")
-    if st.button("Add Material"):
-        if material:
-            st.session_state.materials.append(material)
-            st.experimental_rerun()
-    for i, m in enumerate(st.session_state.materials):
-        cols = st.columns([6, 1])
-        cols[0].write(m)
-        if cols[1].button("🗑️", key=f"mat_del_{i}"):
+# Materials tab
+def materials_tab():
+    st.subheader("Materials")
+    with st.form(key="materials_form"):
+        material = st.text_input("Material name")
+        qty = st.number_input("Quantity", step=1, min_value=0, key="mat_qty")
+        add = st.form_submit_button("Add")
+        if add and material:
+            st.session_state.materials.append({"material": material, "qty": qty})
+
+    st.markdown("### Material List")
+    for i, mat in enumerate(st.session_state.materials):
+        cols = st.columns([4, 1, 1])
+        cols[0].write(mat["material"])
+        cols[1].write(mat["qty"])
+        if cols[2].button("🗑️", key=f"mat_del_{i}"):
             st.session_state.materials.pop(i)
             st.experimental_rerun()
 
-# ---------------- JOB HOURS ----------------
-with tab4:
-    st.header("Job Hours")
-    desc = st.text_input("Job Description")
-    if not st.session_state.clock_running:
-        if st.button("Start Clock"):
-            st.session_state.start_time = datetime.now()
-            st.session_state.clock_running = True
-            st.session_state.current_desc = desc
-    else:
-        if st.button("End Clock"):
-            end_time = datetime.now()
-            duration = (end_time - st.session_state.start_time).total_seconds() / 3600
-            st.session_state.job_logs.append({
-                "desc": st.session_state.current_desc,
-                "start": st.session_state.start_time,
-                "end": end_time,
-                "hours": round(duration, 2)
-            })
-            st.session_state.clock_running = False
-            st.session_state.start_time = None
+# Job Hours tab
+def job_hours_tab():
+    st.subheader("Job Hours")
+    if "job_clock" not in st.session_state:
+        st.session_state.job_clock = {"start": None}
 
-    st.subheader("Log")
-    now = datetime.now()
-    week_total = 0
-    month_total = 0
-
-    for i, log in enumerate(st.session_state.job_logs):
-        if log["start"].isocalendar()[1] == now.isocalendar()[1]:
-            week_total += log["hours"]
-        if log["start"].month == now.month:
-            month_total += log["hours"]
-        cols = st.columns([4, 2, 2, 2, 1])
-        cols[0].write(log["desc"])
-        cols[1].write(log["start"].strftime("%m/%d %H:%M"))
-        cols[2].write(log["end"].strftime("%m/%d %H:%M"))
-        cols[3].write(f"{log['hours']:.2f} hrs")
-        if cols[4].button("🗑️", key=f"log_del_{i}"):
-            st.session_state.job_logs.pop(i)
+    with st.form("job_entry_form"):
+        desc = st.text_input("Job Description")
+        start_btn = st.form_submit_button("Start Clock")
+        if start_btn and desc:
+            st.session_state.job_clock["start"] = datetime.datetime.now()
+            st.session_state.job_clock["desc"] = desc
             st.experimental_rerun()
 
-    st.markdown(f"**Total This Week:** {week_total:.2f} hrs")
-    st.markdown(f"**Total This Month:** {month_total:.2f} hrs")
+    if st.session_state.job_clock["start"]:
+        end_btn = st.button("End Clock")
+        if end_btn:
+            end_time = datetime.datetime.now()
+            start_time = st.session_state.job_clock["start"]
+            duration = round((end_time - start_time).total_seconds() / 3600, 2)
+            st.session_state.job_log.append({
+                "desc": st.session_state.job_clock["desc"],
+                "start": start_time,
+                "end": end_time,
+                "hours": duration
+            })
+            st.session_state.job_clock = {"start": None}
+            st.experimental_rerun()
+
+    # Show job log
+    st.markdown("### Job History")
+    total_week = 0
+    total_month = 0
+    today = datetime.datetime.now()
+    for i, log in enumerate(st.session_state.job_log):
+        log_date = log["start"]
+        week_diff = (today - log_date).days < 7
+        month_diff = (today - log_date).days < 31
+        if week_diff:
+            total_week += log["hours"]
+        if month_diff:
+            total_month += log["hours"]
+
+        st.write(f"**{log['desc']}** — {log['start'].strftime('%Y-%m-%d %H:%M')} to {log['end'].strftime('%H:%M')} — {log['hours']} hrs")
+        if st.button("🗑️ Delete", key=f"job_del_{i}"):
+            st.session_state.job_log.pop(i)
+            st.experimental_rerun()
+
+    st.markdown(f"**Total hours this week:** {round(total_week, 2)}")
+    st.markdown(f"**Total hours this month:** {round(total_month, 2)}")
+
+# Sidebar navigation
+tab = st.sidebar.radio("Navigate", ["Inventory", "Tools", "Materials", "Job Hours"])
+if tab == "Inventory":
+    inventory_tab()
+elif tab == "Tools":
+    tools_tab()
+elif tab == "Materials":
+    materials_tab()
+elif tab == "Job Hours":
+    job_hours_tab()
