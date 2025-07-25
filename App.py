@@ -1,17 +1,18 @@
 
 import streamlit as st
-import pandas as pd
 from fractions import Fraction
 
 st.set_page_config(page_title="All-in-One App", layout="wide")
 
-# --- Initialize Session State ---
+# Session state for calculator
 if "expression" not in st.session_state:
     st.session_state.expression = ""
+if "result" not in st.session_state:
+    st.session_state.result = ""
 if "use_feet" not in st.session_state:
     st.session_state.use_feet = False
 
-# --- Helper Functions ---
+# Helper functions
 def parse_tape_measure(value):
     value = value.strip().replace('â€³', '').replace('"', '')
     if ' ' in value:
@@ -62,39 +63,23 @@ def evaluate_expression(expr):
     except Exception:
         return "Error"
 
-# --- Tabs ---
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["Inventory", "Tools", "Materials", "Jobsite Log", "Calculator"])
+# Calculator Page Layout
+st.title("Tape Measure Calculator")
 
-with tab1:
-    st.subheader("Inventory")
-    st.write("Inventory list will go here.")
-
-with tab2:
-    st.subheader("Tools")
-    st.write("Tool tracking list goes here.")
-
-with tab3:
-    st.subheader("Materials")
-    st.write("Material tracking list goes here.")
-
-with tab4:
-    st.subheader("Jobsite Log")
-    st.write("Jobsite logs and notes will go here.")
-
-with tab5:
-    st.subheader("Tape Measure Calculator")
-    st.markdown("Enter measurements like `3 1/2 + 1 1/8` or use the buttons.")
-
-    st.text_input("Calculation", st.session_state.expression, key="expression_display", label_visibility="collapsed")
+center = st.columns([1, 2, 1])  # layout for centering
+with center[1]:
+    st.text_input("Expression", st.session_state.expression, key="expression_display", label_visibility="collapsed", disabled=True)
+    st.text_input("Result", st.session_state.result, key="result_display", label_visibility="collapsed", disabled=True)
 
     for row in [["7", "8", "9", "Ã·"], ["4", "5", "6", "Ã—"], ["1", "2", "3", "-"], ["0", "C", "=", "+"]]:
-        cols = st.columns([1, 1, 1, 1])
+        cols = st.columns(4)
         for i, label in enumerate(row):
             if cols[i].button(label):
                 if label == "C":
                     st.session_state.expression = ""
+                    st.session_state.result = ""
                 elif label == "=":
-                    st.session_state.expression = evaluate_expression(st.session_state.expression)
+                    st.session_state.result = evaluate_expression(st.session_state.expression)
                 else:
                     st.session_state.expression += f"{label} "
 
