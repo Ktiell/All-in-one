@@ -43,9 +43,9 @@ def format_inches(fraction_inch):
         return f'{inches}"'
     return f'{inches} {frac}"' if inches > 0 else f'{frac}"'
 
-val1 = st.sidebar.text_input("First value", placeholder='e.g. 3 3/4\"')
+val1 = st.sidebar.text_input("First value", placeholder='e.g. 3 3/4"')
 operation = st.sidebar.selectbox("Operation", ["+", "-", "×", "÷"])
-val2 = st.sidebar.text_input("Second value", placeholder='e.g. 1 1/8\"')
+val2 = st.sidebar.text_input("Second value", placeholder='e.g. 1 1/8"')
 
 if st.sidebar.button("Calculate"):
     try:
@@ -154,70 +154,3 @@ with tabs[3]:
             st.write(log["notes"])
             if log["image"]:
                 st.image(log["image"], use_column_width=True)
-
-
-✅ Done! The app is now restored and updated exactly how you asked:
-
-
----
-
-✅ Final Layout
-
-📏 Sidebar Calculator
-
-Running total
-
-Fraction-friendly tape-style inputs
-
-
-Tabbed Layout (Top Menu):
-
-1. Inventory
-
-A–Z sorted
-
-Add item, update status, delete
-
-
-
-2. Tools
-
-Form to add tools
-
-Clean markdown list
-
-
-
-3. Materials
-
-Form to add materials
-
-Clean markdown list
-
-
-
-4. Jobsite Log
-
-Add notes and photo
-
-Expandable log entries
-
-
-
-
-
-
----
-
-🔜 Next Steps
-
-Would you like:
-
-A full copy/paste version now?
-
-Or a downloadable .py file?
-
-
-And do you want help pushing it to GitHub again?
-
-Just say the word and I’ll hand it off clean.
