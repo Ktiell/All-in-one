@@ -2,7 +2,6 @@
 import streamlit as st
 from fractions import Fraction
 import re
-import time
 from datetime import datetime, timedelta
 
 st.set_page_config(page_title="All-in-One App", layout="wide")
@@ -25,7 +24,7 @@ if "clock_start" not in st.session_state:
 if "job_hours" not in st.session_state:
     st.session_state.job_hours = []
 
-# ---------------- CALCULATOR FUNCTIONS ---------------- #
+# ---------------- HELPER FUNCTIONS ---------------- #
 def parse_mixed_expression(expr):
     expr = expr.replace("Ã—", "*").replace("Ã·", "/")
     expr = re.sub(r'(\d+)\s+(\d+/\d+)', r'(\1+\2)', expr)
@@ -95,55 +94,50 @@ with tab3:
 with tab4:
     st.subheader("Job Hours Tracker")
 
+    now = datetime.now()
+
     if st.session_state.clock_start is None:
         if st.button("Start Clock"):
-            st.session_state.clock_start = datetime.now()
-            st.success(f"Clock started at {st.session_state.clock_start.strftime('%I:%M %p')}")
+            st.session_state.clock_start = now
+            st.experimental_rerun()
     else:
+        st.success(f"Clock started at {st.session_state.clock_start.strftime('%I:%M %p')}")
+        desc = st.text_input("What are you working on?", key="job_desc")
         if st.button("End Clock"):
             end_time = datetime.now()
             duration = end_time - st.session_state.clock_start
             st.session_state.job_hours.append({
-                "Start": st.session_state.clock_start.strftime("%Y-%m-%d %H:%M"),
-                "End": end_time.strftime("%Y-%m-%d %H:%M"),
-                "Duration": str(duration)
+                "Start": st.session_state.clock_start,
+                "End": end_time,
+                "Duration": duration,
+                "Description": desc
             })
-            st.success(f"Clock stopped at {end_time.strftime('%I:%M %p')} â€” Duration: {duration}")
             st.session_state.clock_start = None
+            st.success(f"Session ended: {duration}")
+            st.experimental_rerun()
+
+    # Totals
+    this_week = this_month = timedelta()
+    for entry in st.session_state.job_hours:
+        if entry["Start"].isocalendar()[1] == now.isocalendar()[1]:
+            this_week += entry["Duration"]
+        if entry["Start"].month == now.month and entry["Start"].year == now.year:
+            this_month += entry["Duration"]
+
+    st.markdown(f"**Total This Week:** {round(this_week.total_seconds() / 3600, 2)} hrs")
+    st.markdown(f"**Total This Month:** {round(this_month.total_seconds() / 3600, 2)} hrs")
 
     if st.session_state.job_hours:
-        st.write("Recorded Job Hours:")
-        st.dataframe(st.session_state.job_hours)
+        st.write("Job History")
+        history = [{
+            "Start": e["Start"].strftime("%Y-%m-%d %I:%M %p"),
+            "End": e["End"].strftime("%Y-%m-%d %I:%M %p"),
+            "Hours": round(e["Duration"].total_seconds() / 3600, 2),
+            "Description": e["Description"]
+        } for e in st.session_state.job_hours]
+        st.dataframe(history)
 
 # ---------------- CALCULATOR TAB ---------------- #
 with tab5:
     st.subheader("Tape Measure Calculator")
-    st.markdown("Use buttons or type expressions like `5 1/2 * 3 + 1/8`.")
-
-    st.session_state.expression = st.text_input("Type your math here:", value=st.session_state.expression)
-
-    button_grid = [
-        ["7", "8", "9", "/"],
-        ["4", "5", "6", "*"],
-        ["1", "2", "3", "-"],
-        ["0", ".", "C", "+"],
-        ["1/16", "1/8", "1/4", "="]
-    ]
-
-    st.markdown("### Buttons")
-    for row in button_grid:
-        cols = st.columns(4)
-        for i, label in enumerate(row):
-            if cols[i].button(label, key=f"btn_{row}_{i}"):
-                if label == "C":
-                    st.session_state.expression = ""
-                    st.session_state.result = ""
-                elif label == "=":
-                    res = evaluate_expression(st.session_state.expression)
-                    st.session_state.result = format_result(res, st.session_state.use_feet)
-                else:
-                    st.session_state.expression += f"{label} "
-
-    if st.session_state.result:
-        st.success(f"Result: {st.session_state.result}")
-    st.checkbox("Show feet & inches", key="use_feet")
+    st.markdown("ðŸ› ï¸ Calculator fix coming next... layout and lag improvements will be added.")
