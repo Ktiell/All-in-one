@@ -1,10 +1,11 @@
 
 import streamlit as st
+import pandas as pd
 from fractions import Fraction
 
 st.set_page_config(page_title="All-in-One App", layout="wide")
 
-# Session state for calculator
+# --- Session State Setup ---
 if "expression" not in st.session_state:
     st.session_state.expression = ""
 if "result" not in st.session_state:
@@ -12,7 +13,7 @@ if "result" not in st.session_state:
 if "use_feet" not in st.session_state:
     st.session_state.use_feet = False
 
-# Helper functions
+# --- Helper Functions ---
 def parse_tape_measure(value):
     value = value.strip().replace('â€³', '').replace('"', '')
     if ' ' in value:
@@ -63,33 +64,57 @@ def evaluate_expression(expr):
     except Exception:
         return "Error"
 
-# Calculator Page Layout
-st.title("Tape Measure Calculator")
+# --- Tabs ---
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["Inventory", "Tools", "Materials", "Jobsite Log", "Calculator"])
 
-center = st.columns([1, 2, 1])  # layout for centering
-with center[1]:
-    st.text_input("Expression", st.session_state.expression, key="expression_display", label_visibility="collapsed", disabled=True)
-    st.text_input("Result", st.session_state.result, key="result_display", label_visibility="collapsed", disabled=True)
+with tab1:
+    st.subheader("Inventory")
+    st.write("Inventory list will go here.")
 
-    for row in [["7", "8", "9", "Ã·"], ["4", "5", "6", "Ã—"], ["1", "2", "3", "-"], ["0", "C", "=", "+"]]:
-        cols = st.columns(4)
-        for i, label in enumerate(row):
-            if cols[i].button(label):
-                if label == "C":
-                    st.session_state.expression = ""
-                    st.session_state.result = ""
-                elif label == "=":
-                    st.session_state.result = evaluate_expression(st.session_state.expression)
-                else:
-                    st.session_state.expression += f"{label} "
+with tab2:
+    st.subheader("Tools")
+    st.write("Tool tracking list goes here.")
 
-    st.markdown("### Tape Measure Fractions")
-    frac_row1 = st.columns(5)
-    frac_row2 = st.columns(5)
-    fractions = ["1/16", "1/8", "1/4", "3/8", "1/2", "5/8", "3/4", "7/8", "15/16"]
-    for i, frac in enumerate(fractions):
-        row = frac_row1 if i < 5 else frac_row2
-        if row[i % 5].button(frac):
-            st.session_state.expression += f"{frac} "
+with tab3:
+    st.subheader("Materials")
+    st.write("Material tracking list goes here.")
 
-    st.checkbox("Show in feet & inches", key="use_feet")
+with tab4:
+    st.subheader("Jobsite Log")
+    st.write("Jobsite logs and notes will go here.")
+
+with tab5:
+    st.subheader("Tape Measure Calculator")
+    st.markdown("Use the buttons or enter tape-style expressions like `3 1/2 + 1 1/8`.")
+
+    col_center = st.columns([1, 2, 1])
+    with col_center[1]:
+        st.text_input("Expression", value=st.session_state.expression, key="display", label_visibility="collapsed", disabled=True)
+        st.text_input("Result", value=st.session_state.result, key="result", label_visibility="collapsed", disabled=True)
+
+        button_rows = [["7", "8", "9", "Ã·"],
+                       ["4", "5", "6", "Ã—"],
+                       ["1", "2", "3", "-"],
+                       ["0", "C", "=", "+"]]
+        for row in button_rows:
+            cols = st.columns(4)
+            for i, label in enumerate(row):
+                if cols[i].button(label):
+                    if label == "C":
+                        st.session_state.expression = ""
+                        st.session_state.result = ""
+                    elif label == "=":
+                        st.session_state.result = evaluate_expression(st.session_state.expression)
+                    else:
+                        st.session_state.expression += f"{label} "
+
+        st.markdown("### Tape Measure Fractions")
+        frac_row1 = st.columns(5)
+        frac_row2 = st.columns(5)
+        fractions = ["1/16", "1/8", "1/4", "3/8", "1/2", "5/8", "3/4", "7/8", "15/16"]
+        for i, frac in enumerate(fractions):
+            row = frac_row1 if i < 5 else frac_row2
+            if row[i % 5].button(frac):
+                st.session_state.expression += f"{frac} "
+
+        st.checkbox("Show in feet & inches", key="use_feet")
