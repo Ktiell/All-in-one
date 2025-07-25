@@ -1,6 +1,3 @@
-# Final fixed version: handles proper mixed-number math AND includes calculator buttons
-
-final_button_calc_code = """
 import streamlit as st
 from fractions import Fraction
 import re
@@ -18,9 +15,10 @@ if "use_feet" not in st.session_state:
 # --- Parser for Mixed Numbers ---
 def parse_mixed_expression(expr):
     expr = expr.replace("×", "*").replace("÷", "/")
-    expr = re.sub(r'(\\d+)\\s+(\\d+/\\d+)', r'(\\1+\2)', expr)
-    expr = re.sub(r'(\\d+/\\d+)', r'Fraction("\\1")', expr)
-    expr = re.sub(r'(\\d+)', r'\\1', expr)
+    # Convert mixed numbers like 5 1/2 to (5+1/2)
+    expr = re.sub(r'(\d+)\s+(\d+/\d+)', r'(\1+\2)', expr)
+    # Convert all fractions to Fraction() for Python
+    expr = re.sub(r'(\d+/\d+)', r'Fraction("\1")', expr)
     return expr
 
 def evaluate_expression(expr):
@@ -52,7 +50,7 @@ def format_result(val, use_feet=False):
 # --- UI Layout ---
 st.title("Tape Measure Calculator")
 
-# Display field
+# Display field (disabled)
 st.text_input("Input", value=st.session_state.expression, key="display", label_visibility="collapsed", disabled=True)
 
 # Buttons
@@ -78,20 +76,12 @@ for row in buttons:
             else:
                 st.session_state.expression += f"{label} "
 
-# Optional manual edit
+# Manual edit if needed
 st.session_state.expression = st.text_input("Edit input:", value=st.session_state.expression, key="manual_edit")
 
-# Result
+# Result display
 if st.session_state.result:
     st.success(f"Result: {st.session_state.result}")
 
-# Toggle feet/inches
+# Feet/inches toggle
 st.checkbox("Show feet & inches", key="use_feet")
-"""
-
-# Save the complete fixed version
-final_code_path = "/mnt/data/final_calc_with_buttons.py"
-with open(final_code_path, "w") as f:
-    f.write(final_button_calc_code)
-
-final_code_path
