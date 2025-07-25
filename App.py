@@ -1,36 +1,40 @@
+# Final fixed version: handles proper mixed-number math AND includes calculator buttons
+
+final_button_calc_code = """
 import streamlit as st
 from fractions import Fraction
+import re
 
 st.set_page_config(page_title="Tape Measure Calculator", layout="centered")
 
-# --- Initialize ---
+# --- Session State ---
 if "expression" not in st.session_state:
     st.session_state.expression = ""
 if "result" not in st.session_state:
     st.session_state.result = ""
+if "use_feet" not in st.session_state:
+    st.session_state.use_feet = False
 
-# --- Helpers ---
-def parse_expression(expr):
-    expr = expr.replace("*", "*").replace("/", "/")
-    parts = expr.split()
-    output = ""
-    i = 0
-    while i < len(parts):
-        part = parts[i]
-        if '/' in part:
-            if i > 0 and parts[i-1].isdigit():
-                output = output.rstrip() + f"+Fraction('{part}') "
-            else:
-                output += f"Fraction('{part}') "
-        elif part.isdigit():
-            output += f"{part} "
-        elif part in "+-*()/":
-            output += f"{part} "
-        i += 1
-    return output
+# --- Parser for Mixed Numbers ---
+def parse_mixed_expression(expr):
+    expr = expr.replace("×", "*").replace("÷", "/")
+    expr = re.sub(r'(\\d+)\\s+(\\d+/\\d+)', r'(\\1+\2)', expr)
+    expr = re.sub(r'(\\d+/\\d+)', r'Fraction("\\1")', expr)
+    expr = re.sub(r'(\\d+)', r'\\1', expr)
+    return expr
 
-def format_result(value, use_feet=False):
-    inches = float(value)
+def evaluate_expression(expr):
+    try:
+        parsed = parse_mixed_expression(expr)
+        result = eval(parsed, {"Fraction": Fraction})
+        return result
+    except:
+        return "Error"
+
+def format_result(val, use_feet=False):
+    if val == "Error":
+        return "Error"
+    inches = float(val)
     rounded = round(inches * 16) / 16
     whole = int(rounded)
     remainder = rounded - whole
@@ -38,36 +42,56 @@ def format_result(value, use_feet=False):
     if use_feet:
         feet = whole // 12
         inch = whole % 12
-        out = f"{feet}'"
+        result = f"{feet}'"
         if inch or fraction:
-            out += f" {inch if inch else ''} {fraction if fraction else ''}\""
-        return out.strip()
+            result += f" {inch if inch else ''} {fraction if fraction else ''}\""
+        return result.strip()
     else:
-        out = f"{whole if whole else ''}"
-        if fraction:
-            out += f" {fraction}"
-        return out.strip() + "\""
+        return f"{whole if whole else ''} {fraction if fraction else ''}\"".strip()
 
-def calculate(expr, use_feet):
-    try:
-        parsed = parse_expression(expr)
-        result = eval(parsed, {"Fraction": Fraction})
-        return format_result(result, use_feet)
-    except:
-        return "Error"
-
-# --- UI ---
+# --- UI Layout ---
 st.title("Tape Measure Calculator")
 
-col1, col2 = st.columns([3, 1])
-with col1:
-    expr = st.text_input("Enter your tape math:", value=st.session_state.expression)
-    st.session_state.expression = expr
-with col2:
-    use_feet = st.checkbox("Show feet", key="use_feet")
+# Display field
+st.text_input("Input", value=st.session_state.expression, key="display", label_visibility="collapsed", disabled=True)
 
-if st.button("Calculate"):
-    st.session_state.result = calculate(expr, use_feet)
+# Buttons
+buttons = [
+    ["7", "8", "9", "/"],
+    ["4", "5", "6", "*"],
+    ["1", "2", "3", "-"],
+    ["0", ".", "C", "+"],
+    ["1/16", "1/8", "1/4", "="]
+]
 
+for row in buttons:
+    cols = st.columns(len(row))
+    for i, label in enumerate(row):
+        if cols[i].button(label):
+            if label == "C":
+                st.session_state.expression = ""
+                st.session_state.result = ""
+            elif label == "=":
+                raw = st.session_state.expression
+                res = evaluate_expression(raw)
+                st.session_state.result = format_result(res, st.session_state.use_feet)
+            else:
+                st.session_state.expression += f"{label} "
+
+# Optional manual edit
+st.session_state.expression = st.text_input("Edit input:", value=st.session_state.expression, key="manual_edit")
+
+# Result
 if st.session_state.result:
     st.success(f"Result: {st.session_state.result}")
+
+# Toggle feet/inches
+st.checkbox("Show feet & inches", key="use_feet")
+"""
+
+# Save the complete fixed version
+final_code_path = "/mnt/data/final_calc_with_buttons.py"
+with open(final_code_path, "w") as f:
+    f.write(final_button_calc_code)
+
+final_code_path
