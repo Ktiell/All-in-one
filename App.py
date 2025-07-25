@@ -63,7 +63,7 @@ def evaluate_expression(expr):
         return "Error"
 
 # --- Tabs ---
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["ðŸ“¦ Inventory", "ðŸ§° Tools", "ðŸªµ Materials", "ðŸ“‹ Jobsite Log", "ðŸ“ Calculator"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["Inventory", "Tools", "Materials", "Jobsite Log", "Calculator"])
 
 with tab1:
     st.subheader("Inventory")
@@ -87,15 +87,8 @@ with tab5:
 
     st.text_input("Calculation", st.session_state.expression, key="expression_display", label_visibility="collapsed")
 
-    col1, col2, col3, col4 = st.columns(4)
-    buttons = [
-        ("7", "8", "9", "Ã·"),
-        ("4", "5", "6", "Ã—"),
-        ("1", "2", "3", "-"),
-        ("0", "C", "=", "+")
-    ]
-    for row in buttons:
-        cols = st.columns(4)
+    for row in [["7", "8", "9", "Ã·"], ["4", "5", "6", "Ã—"], ["1", "2", "3", "-"], ["0", "C", "=", "+"]]:
+        cols = st.columns([1, 1, 1, 1])
         for i, label in enumerate(row):
             if cols[i].button(label):
                 if label == "C":
