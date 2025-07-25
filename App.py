@@ -99,10 +99,12 @@ with tabs[0]:
         col1.write(item["name"])
         col2.write(f'Qty: {item["qty"]}')
         col3.write(f'${item["price"]:.2f}')
-        item["status"] = col4.selectbox("Status", ["For Sale", "Sold"],
-                                        index=0 if item["status"] == "For Sale" else 1,
-                                        key=f"inv_status_{i}")
-        if col5.button("🗑️", key=f"inv_delete_{i}"):
+        item["status"] = col4.selectbox(
+            "Status", ["For Sale", "Sold"],
+            index=0 if item["status"] == "For Sale" else 1,
+            key=f"inv_status_{item['name']}_{i}"
+        )
+        if col5.button("🗑️", key=f"inv_delete_{item['name']}_{i}"):
             inv_delete_index = i
     if inv_delete_index is not None:
         del st.session_state.inventory[inv_delete_index]
@@ -125,7 +127,7 @@ with tabs[1]:
     for i, tool in enumerate(st.session_state.tools):
         col1, col2 = st.columns([6, 1])
         col1.markdown(f"- **{tool['name']}**: {tool['notes']}")
-        if col2.button("🗑️", key=f"tool_delete_{i}"):
+        if col2.button("🗑️", key=f"tool_delete_{tool['name']}_{i}"):
             tool_delete_index = i
     if tool_delete_index is not None:
         del st.session_state.tools[tool_delete_index]
@@ -148,7 +150,7 @@ with tabs[2]:
     for i, mat in enumerate(st.session_state.materials):
         col1, col2 = st.columns([6, 1])
         col1.markdown(f"- **{mat['name']}**: {mat['notes']}")
-        if col2.button("🗑️", key=f"mat_delete_{i}"):
+        if col2.button("🗑️", key=f"mat_delete_{mat['name']}_{i}"):
             mat_delete_index = i
     if mat_delete_index is not None:
         del st.session_state.materials[mat_delete_index]
