@@ -1,202 +1,191 @@
 import streamlit as st
-from datetime import datetime, timedelta
+import datetime
 from fractions import Fraction
-import math
+from collections import defaultdict
 
 st.set_page_config(page_title="All in One", layout="wide")
 
-# Apply custom CSS
-st.markdown("""
-<style>
-    .centered-title { text-align: center; font-size: 2em; font-weight: bold; margin-bottom: 1rem; }
-    .inventory-table { border-collapse: collapse; width: 100%; }
-    .inventory-table th, .inventory-table td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-    .inventory-table th { background-color: #f2f2f2; }
-    .button-col button { margin: 0 0.2rem; }
-</style>
-""", unsafe_allow_html=True)
+st.markdown(
+    """
+    <style>
+    .title { text-align: center; font-size: 3em; font-weight: bold; margin-bottom: 1em; }
+    .inv-table th, .inv-table td { padding: 0.5em; text-align: center; }
+    .inv-table input[type="number"] { width: 4em; }
+    .button-cell button { margin-right: 0.3em; }
+    .job-entry { border: 1px solid #ccc; padding: 0.5em; border-radius: 8px; margin-bottom: 0.5em; }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
-st.markdown('<div class="centered-title">All in One</div>', unsafe_allow_html=True)
+st.markdown('<div class="title">All in One</div>', unsafe_allow_html=True)
 
-# Initialize session state
-for section in ['Inventory', 'Tools', 'Materials']:
-    if f'{section.lower()}_data' not in st.session_state:
-        st.session_state[f'{section.lower()}_data'] = []
+tabs = st.tabs(["Tools", "Materials", "Inventory", "Job Hours", "Tape Calculator"])
 
-if 'job_log' not in st.session_state:
-    st.session_state.job_log = []
+# SESSION STATE INIT
+for key in ["tools", "materials", "inventory", "job_sessions", "active_job"]:
+    if key not in st.session_state:
+        st.session_state[key] = []
 
-if 'clock_start' not in st.session_state:
-    st.session_state.clock_start = None
-
-# -------- Tabs ----------
-tabs = st.tabs(["📦 Inventory", "🧰 Tools", "🪵 Materials", "🕒 Job Hours", "📐 Tape Measure Calculator"])
-
-# -------- Inventory Tab ----------
+### TOOLS TAB
 with tabs[0]:
+    st.subheader("Tools")
+    tool_name = st.text_input("Add Tool")
+    if st.button("➕ Add Tool"):
+        if tool_name:
+            st.session_state.tools.append(tool_name)
+
+    for i, tool in enumerate(st.session_state.tools):
+        cols = st.columns([6, 1])
+        cols[0].write(tool)
+        if cols[1].button("🗑️", key=f"tool_del_{i}"):
+            st.session_state.tools.pop(i)
+            st.experimental_rerun()
+
+### MATERIALS TAB
+with tabs[1]:
+    st.subheader("Materials")
+    mat_name = st.text_input("Add Material")
+    if st.button("➕ Add Material"):
+        if mat_name:
+            st.session_state.materials.append(mat_name)
+
+    for i, mat in enumerate(st.session_state.materials):
+        cols = st.columns([6, 1])
+        cols[0].write(mat)
+        if cols[1].button("🗑️", key=f"mat_del_{i}"):
+            st.session_state.materials.pop(i)
+            st.experimental_rerun()
+
+### INVENTORY TAB
+with tabs[2]:
     st.subheader("Inventory")
-    inv_data = st.session_state.inventory_data
-    cols = st.columns([3, 1, 1, 2])
 
-    with cols[0]: item = st.text_input("Item", key="inv_item")
-    with cols[1]: qty = st.number_input("Qty", step=1, key="inv_qty")
-    with cols[2]: price = st.number_input("Price", step=0.01, key="inv_price")
-    with cols[3]:
-        if st.button("Add Item", key="add_inv"):
-            inv_data.append({"Item": item, "Qty": int(qty), "Price": float(price)})
-
-    if inv_data:
-        st.markdown('<table class="inventory-table"><tr><th>Item</th><th>Qty</th><th>Price</th><th>Actions</th></tr>', unsafe_allow_html=True)
-        for i, row in enumerate(inv_data):
+    def inventory_table():
+        st.markdown("<table class='inv-table'><tr><th>Item</th><th>Qty</th><th>Price</th><th>Actions</th></tr>", unsafe_allow_html=True)
+        for i, item in enumerate(st.session_state.inventory):
             st.markdown(f"""
                 <tr>
-                    <td>{row['Item']}</td>
-                    <td>{row['Qty']}</td>
-                    <td>${row['Price']:.2f}</td>
-                    <td class="button-col">
-                        <form action="" method="post">
-                            <button type="submit" name="plus_{i}">+</button>
-                            <button type="submit" name="minus_{i}">−</button>
-                            <button type="submit" name="del_{i}">🗑️</button>
+                    <td>{item['name']}</td>
+                    <td>{item['qty']}</td>
+                    <td>${item['price']}</td>
+                    <td class='button-cell'>
+                        <form action='#' method='post'>
+                            <button onclick="document.getElementById('inv_add_{i}').click();return false;">➕</button>
+                            <button onclick="document.getElementById('inv_sub_{i}').click();return false;">➖</button>
+                            <button onclick="document.getElementById('inv_del_{i}').click();return false;">🗑️</button>
                         </form>
                     </td>
                 </tr>
-            """, unsafe_allow_html=True)
-            if f'plus_{i}' in st.session_state:
-                row['Qty'] += 1
-            if f'minus_{i}' in st.session_state and row['Qty'] > 0:
-                row['Qty'] -= 1
-            if f'del_{i}' in st.session_state:
-                inv_data.pop(i)
-                break
+                """, unsafe_allow_html=True)
+            if st.button("", key=f"inv_add_{i}", help="Add", use_container_width=False):
+                st.session_state.inventory[i]["qty"] += 1
+            if st.button("", key=f"inv_sub_{i}", help="Subtract", use_container_width=False):
+                if st.session_state.inventory[i]["qty"] > 0:
+                    st.session_state.inventory[i]["qty"] -= 1
+            if st.button("", key=f"inv_del_{i}", help="Delete", use_container_width=False):
+                st.session_state.inventory.pop(i)
+                st.experimental_rerun()
         st.markdown("</table>", unsafe_allow_html=True)
 
-# -------- Tools Tab ----------
-with tabs[1]:
-    st.subheader("Tools")
-    tools = st.session_state.tools_data
-    cols = st.columns([4, 1])
+    inv_name = st.text_input("Item name")
+    inv_qty = st.number_input("Quantity", step=1, value=1)
+    inv_price = st.number_input("Price", step=1.0, value=0.0)
+    if st.button("➕ Add Inventory Item"):
+        st.session_state.inventory.append({"name": inv_name, "qty": inv_qty, "price": inv_price})
+    inventory_table()
 
-    with cols[0]: tool = st.text_input("Tool", key="tool_input")
-    with cols[1]:
-        if st.button("Add Tool"):
-            tools.append(tool)
-
-    for i, t in enumerate(tools):
-        col1, col2 = st.columns([6, 1])
-        col1.write(t)
-        if col2.button("🗑️", key=f"del_tool_{i}"):
-            tools.pop(i)
-            break
-
-# -------- Materials Tab ----------
-with tabs[2]:
-    st.subheader("Materials")
-    mats = st.session_state.materials_data
-    cols = st.columns([4, 1])
-
-    with cols[0]: mat = st.text_input("Material", key="mat_input")
-    with cols[1]:
-        if st.button("Add Material"):
-            mats.append(mat)
-
-    for i, m in enumerate(mats):
-        col1, col2 = st.columns([6, 1])
-        col1.write(m)
-        if col2.button("🗑️", key=f"del_mat_{i}"):
-            mats.pop(i)
-            break
-
-# -------- Job Hours Tab ----------
+### JOB HOURS TAB
 with tabs[3]:
-    st.subheader("Job Hours")
-    description = st.text_input("Job Description")
-    col1, col2 = st.columns(2)
+    st.subheader("Job Hours Log")
 
-    if st.session_state.clock_start is None:
-        if col1.button("Start Clock"):
-            st.session_state.clock_start = datetime.now()
-            st.rerun()
+    def get_total_hours():
+        now = datetime.datetime.now()
+        this_week = now.isocalendar().week
+        week_hours = 0
+        month_hours = 0
+        for job in st.session_state.job_sessions:
+            duration = (job["end"] - job["start"]).total_seconds() / 3600 if job["end"] else 0
+            if job["start"].isocalendar().week == this_week:
+                week_hours += duration
+            if job["start"].month == now.month:
+                month_hours += duration
+        return round(week_hours, 2), round(month_hours, 2)
+
+    desc = st.text_input("Task Description")
+    if "active_job" not in st.session_state or not st.session_state.active_job:
+        if st.button("▶️ Start Clock"):
+            st.session_state.active_job = {
+                "start": datetime.datetime.now(),
+                "desc": desc,
+            }
     else:
-        col1.write(f"Started at {st.session_state.clock_start.strftime('%I:%M:%S %p')}")
-        if col2.button("End Clock"):
-            end_time = datetime.now()
-            duration = end_time - st.session_state.clock_start
-            st.session_state.job_log.append({
-                "desc": description,
-                "start": st.session_state.clock_start,
-                "end": end_time,
-                "duration": duration
-            })
-            st.session_state.clock_start = None
-            st.rerun()
+        st.info(f"Started: {st.session_state.active_job['start'].strftime('%Y-%m-%d %H:%M:%S')} — {st.session_state.active_job['desc']}")
+        if st.button("⏹️ End Clock"):
+            job = st.session_state.active_job
+            job["end"] = datetime.datetime.now()
+            st.session_state.job_sessions.append(job)
+            st.session_state.active_job = None
+            st.experimental_rerun()
 
-    if st.session_state.job_log:
-        st.write("### Logged Jobs")
-        total_week = timedelta()
-        total_month = timedelta()
-        now = datetime.now()
+    st.divider()
+    week_total, month_total = get_total_hours()
+    st.write(f"**Total Hours This Week:** {week_total} hrs")
+    st.write(f"**Total Hours This Month:** {month_total} hrs")
+    st.divider()
 
-        for i, job in enumerate(st.session_state.job_log):
-            start = job['start']
-            duration = job['duration']
-            if start >= now - timedelta(days=7):
-                total_week += duration
-            if start.month == now.month and start.year == now.year:
-                total_month += duration
+    for i, job in enumerate(st.session_state.job_sessions):
+        duration = (job["end"] - job["start"]).total_seconds() / 3600 if job["end"] else 0
+        with st.expander(f"{job['desc']} — {round(duration, 2)} hrs"):
+            st.write(f"Start: {job['start']}")
+            st.write(f"End: {job['end']}")
+            st.write(f"Duration: {round(duration, 2)} hrs")
+            if st.button("🗑️ Delete", key=f"del_job_{i}"):
+                st.session_state.job_sessions.pop(i)
+                st.experimental_rerun()
 
-            col1, col2, col3, col4 = st.columns([3, 3, 2, 1])
-            col1.write(job['desc'])
-            col2.write(f"{job['start'].strftime('%Y-%m-%d %I:%M %p')} → {job['end'].strftime('%I:%M %p')}")
-            col3.write(f"{duration}")
-            if col4.button("🗑️", key=f"del_job_{i}"):
-                st.session_state.job_log.pop(i)
-                st.rerun()
-
-        st.markdown(f"**Total This Week:** {total_week}")
-        st.markdown(f"**Total This Month:** {total_month}")
-
-# -------- Tape Measure Calculator Tab ----------
+### TAPE CALCULATOR TAB
 with tabs[4]:
     st.subheader("Tape Measure Calculator")
 
-    def parse_input(s):
-        try:
-            s = s.strip().replace(" ", "")
-            if "'" in s or '"' in s:
-                s = s.replace("'", "").replace('"', "")
-            if '/' in s:
-                return float(Fraction(s))
-            return float(s)
-        except:
-            return None
-
-    num1 = st.text_input("First Measurement (e.g. 3 3/4)", key="num1")
-    operator = st.selectbox("Operation", ["+", "-", "×", "÷"])
-    num2 = st.text_input("Second Measurement (e.g. 1 1/8)", key="num2")
-
-    result_area = st.empty()
-    if st.button("Calculate"):
-        val1 = parse_input(num1)
-        val2 = parse_input(num2)
-        if val1 is not None and val2 is not None:
-            if operator == "+":
-                result = val1 + val2
-            elif operator == "-":
-                result = val1 - val2
-            elif operator == "×":
-                result = val1 * val2
-            elif operator == "÷":
-                result = val1 / val2 if val2 != 0 else None
-
-            def format_fraction(x):
-                whole = int(x)
-                frac = Fraction(x - whole).limit_denominator(16)
-                return f"{whole} {frac.numerator}/{frac.denominator}\"" if frac.numerator != 0 else f"{whole}\""
-
-            if result is not None:
-                result_area.markdown(f"### Result: `{format_fraction(result)}`")
-            else:
-                result_area.error("Division by zero.")
+    def parse_fraction(value):
+        if ' ' in value:
+            whole, frac = value.split()
+            return float(whole) + float(Fraction(frac))
+        elif '/' in value:
+            return float(Fraction(value))
         else:
-            result_area.error("Invalid input. Use format like 3 3/4")
+            return float(value)
+
+    def format_tape(value):
+        inches = round(value * 16) / 16
+        whole = int(inches)
+        frac = Fraction(inches - whole).limit_denominator(16)
+        return f"{whole} {frac}" if frac else f"{whole}"
+
+    ft1 = st.number_input("Feet 1", step=1, value=0)
+    in1 = st.text_input("Inches 1 (e.g. 3 1/2)", "0")
+    op = st.selectbox("Operation", ["+", "-", "×", "÷"])
+    ft2 = st.number_input("Feet 2", step=1, value=0)
+    in2 = st.text_input("Inches 2 (e.g. 1 3/4)", "0")
+
+    try:
+        total1 = ft1 * 12 + parse_fraction(in1)
+        total2 = ft2 * 12 + parse_fraction(in2)
+
+        result = 0
+        if op == "+":
+            result = total1 + total2
+        elif op == "-":
+            result = total1 - total2
+        elif op == "×":
+            result = total1 * total2
+        elif op == "÷":
+            result = total1 / total2 if total2 != 0 else 0
+
+        feet = int(result // 12)
+        inches = format_tape(result % 12)
+        st.success(f"Result: {feet} ft {inches} in")
+
+    except Exception as e:
+        st.error(f"Error: {e}")
