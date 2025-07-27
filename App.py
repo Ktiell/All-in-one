@@ -11,7 +11,7 @@ for key in ["tools", "materials", "inventory", "job_sessions", "active_job"]:
     if key not in st.session_state:
         st.session_state[key] = []
 
-# -------------------- TOOLS TAB --------------------
+# -------------------- TOOLS --------------------
 with tabs[0]:
     st.subheader("Tools")
     tool_input = st.text_input("Add Tool", key="tool_input")
@@ -26,7 +26,7 @@ with tabs[0]:
             st.session_state.tools.pop(i)
             st.rerun()
 
-# -------------------- MATERIALS TAB --------------------
+# -------------------- MATERIALS --------------------
 with tabs[1]:
     st.subheader("Materials")
 
@@ -44,22 +44,22 @@ with tabs[1]:
     header[2].markdown("**Actions**")
 
     for i, item in enumerate(st.session_state.materials):
-        row = st.columns([4, 1, 3])
-        row[0].write(item["name"])
-        row[1].write(item["qty"])
-        btns = row[2].columns([1, 1, 1])
-        if btns[0].button("➕", key=f"mat_inc_{i}"):
+        row1, row2, row3 = st.columns([4, 1, 3])
+        row1.markdown(f"{item['name']}")
+        row2.markdown(f"{item['qty']}")
+        action_cols = row3.columns(3)
+        if action_cols[0].button("➕", key=f"mat_plus_{i}"):
             item["qty"] += 1
             st.rerun()
-        if btns[1].button("➖", key=f"mat_dec_{i}"):
+        if action_cols[1].button("➖", key=f"mat_minus_{i}"):
             if item["qty"] > 0:
                 item["qty"] -= 1
                 st.rerun()
-        if btns[2].button("🗑️", key=f"mat_del_{i}"):
+        if action_cols[2].button("🗑️", key=f"mat_del_{i}"):
             st.session_state.materials.pop(i)
             st.rerun()
 
-# -------------------- INVENTORY TAB --------------------
+# -------------------- INVENTORY --------------------
 with tabs[2]:
     st.subheader("Inventory")
 
@@ -80,10 +80,10 @@ with tabs[2]:
 
     for i, item in enumerate(st.session_state.inventory):
         row = st.columns([4, 1, 1, 3])
-        row[0].write(item["name"])
-        row[1].write(item["qty"])
-        row[2].write(f"${item['price']:.2f}")
-        btns = row[3].columns([1, 1, 1])
+        row[0].markdown(f"{item['name']}")
+        row[1].markdown(f"{item['qty']}")
+        row[2].markdown(f"${item['price']:.2f}")
+        btns = row[3].columns(3)
         if btns[0].button("➕", key=f"inv_inc_{i}"):
             item["qty"] += 1
             st.rerun()
@@ -95,7 +95,7 @@ with tabs[2]:
             st.session_state.inventory.pop(i)
             st.rerun()
 
-# -------------------- JOB HOURS TAB --------------------
+# -------------------- JOB HOURS --------------------
 with tabs[3]:
     st.subheader("Job Hours Log")
 
@@ -142,7 +142,7 @@ with tabs[3]:
                 st.session_state.job_sessions.pop(i)
                 st.rerun()
 
-# -------------------- TAPE MEASURE CALCULATOR TAB --------------------
+# -------------------- TAPE MEASURE CALCULATOR --------------------
 with tabs[4]:
     st.subheader("Tape Measure Calculator")
 
