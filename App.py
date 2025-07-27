@@ -7,12 +7,11 @@ st.markdown("<h1 style='text-align:center;'>All in One</h1>", unsafe_allow_html=
 
 tabs = st.tabs(["Tools", "Materials", "Inventory", "Job Hours", "Tape Calculator"])
 
-# Initialize session state
 for key in ["tools", "materials", "inventory", "job_sessions", "active_job"]:
     if key not in st.session_state:
         st.session_state[key] = []
 
-# -------------------- TOOLS TAB --------------------
+# -------------------- TOOLS --------------------
 with tabs[0]:
     st.subheader("Tools")
     tool_input = st.text_input("Add Tool", key="tool_input")
@@ -25,9 +24,9 @@ with tabs[0]:
         col1.write(tool)
         if col2.button("🗑️", key=f"tool_del_{i}"):
             st.session_state.tools.pop(i)
-            st.experimental_rerun()
+            st.rerun()
 
-# -------------------- MATERIALS TAB --------------------
+# -------------------- MATERIALS --------------------
 with tabs[1]:
     st.subheader("Materials")
     col1, col2 = st.columns([3, 1])
@@ -43,17 +42,20 @@ with tabs[1]:
         cols = st.columns([3, 1, 2])
         cols[0].write(item["name"])
         cols[1].write(str(item["qty"]))
-        c1, c2, c3 = cols[2].columns(3)
-        if c1.button("➕", key=f"mat_add_{i}"):
-            item["qty"] += 1
-        if c2.button("➖", key=f"mat_sub_{i}"):
-            if item["qty"] > 0:
-                item["qty"] -= 1
-        if c3.button("🗑️", key=f"mat_del_{i}"):
-            st.session_state.materials.pop(i)
-            st.experimental_rerun()
+        with cols[2]:
+            b1, b2, b3 = st.columns(3)
+            if b1.button("➕", key=f"mat_add_{i}"):
+                item["qty"] += 1
+                st.rerun()
+            if b2.button("➖", key=f"mat_sub_{i}"):
+                if item["qty"] > 0:
+                    item["qty"] -= 1
+                    st.rerun()
+            if b3.button("🗑️", key=f"mat_del_{i}"):
+                st.session_state.materials.pop(i)
+                st.rerun()
 
-# -------------------- INVENTORY TAB --------------------
+# -------------------- INVENTORY --------------------
 with tabs[2]:
     st.subheader("Inventory")
     col1, col2, col3 = st.columns([3, 1, 1])
@@ -77,17 +79,20 @@ with tabs[2]:
         cols[0].write(item["name"])
         cols[1].write(item["qty"])
         cols[2].write(f"${item['price']:.2f}")
-        c1, c2, c3 = cols[3].columns(3)
-        if c1.button("➕", key=f"inv_plus_{i}"):
-            st.session_state.inventory[i]["qty"] += 1
-        if c2.button("➖", key=f"inv_minus_{i}"):
-            if st.session_state.inventory[i]["qty"] > 0:
-                st.session_state.inventory[i]["qty"] -= 1
-        if c3.button("🗑️", key=f"inv_delete_{i}"):
-            st.session_state.inventory.pop(i)
-            st.experimental_rerun()
+        with cols[3]:
+            a1, a2, a3 = st.columns(3)
+            if a1.button("➕", key=f"inv_plus_{i}"):
+                st.session_state.inventory[i]["qty"] += 1
+                st.rerun()
+            if a2.button("➖", key=f"inv_minus_{i}"):
+                if st.session_state.inventory[i]["qty"] > 0:
+                    st.session_state.inventory[i]["qty"] -= 1
+                    st.rerun()
+            if a3.button("🗑️", key=f"inv_delete_{i}"):
+                st.session_state.inventory.pop(i)
+                st.rerun()
 
-# -------------------- JOB HOURS TAB --------------------
+# -------------------- JOB HOURS --------------------
 with tabs[3]:
     st.subheader("Job Hours Log")
 
@@ -118,7 +123,7 @@ with tabs[3]:
             job["end"] = datetime.datetime.now()
             st.session_state.job_sessions.append(job)
             st.session_state.active_job = None
-            st.experimental_rerun()
+            st.rerun()
 
     week_total, month_total = get_total_hours()
     st.write(f"**Total Hours This Week:** {week_total} hrs")
@@ -132,9 +137,9 @@ with tabs[3]:
             st.write(f"Duration: {round(duration, 2)} hrs")
             if st.button("🗑️ Delete", key=f"del_job_{i}"):
                 st.session_state.job_sessions.pop(i)
-                st.experimental_rerun()
+                st.rerun()
 
-# -------------------- TAPE CALCULATOR TAB --------------------
+# -------------------- TAPE CALCULATOR --------------------
 with tabs[4]:
     st.subheader("Tape Measure Calculator")
 
