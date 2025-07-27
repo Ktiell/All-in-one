@@ -26,7 +26,7 @@ with tabs[0]:
             st.session_state.tools.pop(i)
             st.rerun()
 
-# -------------------- MATERIALS (Fixed Layout & Buttons) --------------------
+# -------------------- MATERIALS --------------------
 with tabs[1]:
     st.subheader("Materials")
 
@@ -38,15 +38,17 @@ with tabs[1]:
         if mat_name:
             st.session_state.materials.append({"name": mat_name, "qty": mat_qty})
 
+    # Header
     header = st.columns([4, 1, 3])
     header[0].markdown("**Material**")
     header[1].markdown("**Qty**")
     header[2].markdown("**Actions**")
 
+    # Rows
     for i, item in enumerate(st.session_state.materials):
         row = st.columns([4, 1, 3])
-        row[0].write(item["name"])
-        row[1].write(str(item["qty"]))
+        row[0].markdown(f"{item['name']}")
+        row[1].markdown(f"{item['qty']}")
         b1, b2, b3 = row[2].columns(3)
 
         if b1.button("➕", key=f"mat_plus_{i}"):
@@ -62,7 +64,7 @@ with tabs[1]:
             st.session_state.materials.pop(i)
             st.rerun()
 
-# -------------------- INVENTORY (Fixed Layout & Buttons) --------------------
+# -------------------- INVENTORY --------------------
 with tabs[2]:
     st.subheader("Inventory")
 
@@ -75,6 +77,7 @@ with tabs[2]:
         if inv_name:
             st.session_state.inventory.append({"name": inv_name, "qty": inv_qty, "price": inv_price})
 
+    # Header
     header = st.columns([4, 1, 1, 3])
     header[0].markdown("**Item**")
     header[1].markdown("**Qty**")
@@ -83,9 +86,9 @@ with tabs[2]:
 
     for i, item in enumerate(st.session_state.inventory):
         row = st.columns([4, 1, 1, 3])
-        row[0].write(item["name"])
-        row[1].write(str(item["qty"]))
-        row[2].write(f"${item['price']:.2f}")
+        row[0].markdown(f"{item['name']}")
+        row[1].markdown(f"{item['qty']}")
+        row[2].markdown(f"${item['price']:.2f}")
         b1, b2, b3 = row[3].columns(3)
 
         if b1.button("➕", key=f"inv_plus_{i}"):
