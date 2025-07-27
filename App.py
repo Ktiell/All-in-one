@@ -11,7 +11,7 @@ for key in ["tools", "materials", "inventory", "job_sessions", "active_job"]:
     if key not in st.session_state:
         st.session_state[key] = []
 
-# -------------------- TOOLS TAB --------------------
+# -------------------- TOOLS --------------------
 with tabs[0]:
     st.subheader("Tools")
     tool_input = st.text_input("Add Tool", key="tool_input")
@@ -26,7 +26,7 @@ with tabs[0]:
             st.session_state.tools.pop(i)
             st.rerun()
 
-# -------------------- MATERIALS TAB (FIXED) --------------------
+# -------------------- MATERIALS (Mobile-Proof Layout) --------------------
 with tabs[1]:
     st.subheader("Materials")
 
@@ -56,7 +56,6 @@ with tabs[1]:
         """,
         unsafe_allow_html=True
     )
-
     st.markdown("<table class='material-table'><tr><th>Material</th><th>Qty</th><th colspan='3'>Actions</th></tr>", unsafe_allow_html=True)
 
     for i, item in enumerate(st.session_state.materials):
@@ -64,7 +63,7 @@ with tabs[1]:
             f"<tr><td>{item['name']}</td><td>{item['qty']}</td><td>➕</td><td>➖</td><td>🗑️</td></tr>",
             unsafe_allow_html=True
         )
-        cols = st.columns([1, 1, 1])
+        cols = st.columns(3)
         if cols[0].button(" ", key=f"mat_plus_{i}", help="Add Qty"):
             item["qty"] += 1
             st.rerun()
@@ -78,7 +77,7 @@ with tabs[1]:
 
     st.markdown("</table>", unsafe_allow_html=True)
 
-# -------------------- INVENTORY TAB --------------------
+# -------------------- INVENTORY --------------------
 with tabs[2]:
     st.subheader("Inventory")
 
@@ -114,7 +113,7 @@ with tabs[2]:
             st.session_state.inventory.pop(i)
             st.rerun()
 
-# -------------------- JOB HOURS TAB --------------------
+# -------------------- JOB HOURS --------------------
 with tabs[3]:
     st.subheader("Job Hours Log")
 
@@ -161,7 +160,7 @@ with tabs[3]:
                 st.session_state.job_sessions.pop(i)
                 st.rerun()
 
-# -------------------- TAPE CALCULATOR TAB --------------------
+# -------------------- TAPE MEASURE CALCULATOR --------------------
 with tabs[4]:
     st.subheader("Tape Measure Calculator")
 
