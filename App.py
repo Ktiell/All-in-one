@@ -26,14 +26,13 @@ with tabs[0]:
             st.session_state.tools.pop(i)
             st.rerun()
 
-# -------------------- MATERIALS --------------------
+# -------------------- MATERIALS (Fixed Layout & Buttons) --------------------
 with tabs[1]:
     st.subheader("Materials")
 
-    # Add material inputs
-    cols = st.columns([4, 1])
-    mat_name = cols[0].text_input("Material Name", key="mat_name_input")
-    mat_qty = cols[1].number_input("Qty", min_value=0, step=1, value=1, key="mat_qty_input")
+    col1, col2 = st.columns([4, 1])
+    mat_name = col1.text_input("Material Name", key="mat_name_input")
+    mat_qty = col2.number_input("Qty", min_value=0, step=1, value=1, key="mat_qty_input")
 
     if st.button("➕ Add Material"):
         if mat_name:
@@ -48,20 +47,22 @@ with tabs[1]:
         row = st.columns([4, 1, 3])
         row[0].write(item["name"])
         row[1].write(str(item["qty"]))
-        btns = row[2].columns(3)
+        b1, b2, b3 = row[2].columns(3)
 
-        if btns[0].button("➕", key=f"mat_plus_{i}"):
-            item["qty"] += 1
+        if b1.button("➕", key=f"mat_plus_{i}"):
+            st.session_state.materials[i]["qty"] += 1
             st.rerun()
-        if btns[1].button("➖", key=f"mat_minus_{i}"):
-            if item["qty"] > 0:
-                item["qty"] -= 1
+
+        if b2.button("➖", key=f"mat_minus_{i}"):
+            if st.session_state.materials[i]["qty"] > 0:
+                st.session_state.materials[i]["qty"] -= 1
                 st.rerun()
-        if btns[2].button("🗑️", key=f"mat_delete_{i}"):
+
+        if b3.button("🗑️", key=f"mat_del_{i}"):
             st.session_state.materials.pop(i)
             st.rerun()
 
-# -------------------- INVENTORY --------------------
+# -------------------- INVENTORY (Fixed Layout & Buttons) --------------------
 with tabs[2]:
     st.subheader("Inventory")
 
@@ -82,18 +83,19 @@ with tabs[2]:
 
     for i, item in enumerate(st.session_state.inventory):
         row = st.columns([4, 1, 1, 3])
-        row[0].markdown(f"{item['name']}")
-        row[1].markdown(f"{item['qty']}")
-        row[2].markdown(f"${item['price']:.2f}")
-        btns = row[3].columns(3)
-        if btns[0].button("➕", key=f"inv_inc_{i}"):
+        row[0].write(item["name"])
+        row[1].write(str(item["qty"]))
+        row[2].write(f"${item['price']:.2f}")
+        b1, b2, b3 = row[3].columns(3)
+
+        if b1.button("➕", key=f"inv_plus_{i}"):
             item["qty"] += 1
             st.rerun()
-        if btns[1].button("➖", key=f"inv_dec_{i}"):
+        if b2.button("➖", key=f"inv_minus_{i}"):
             if item["qty"] > 0:
                 item["qty"] -= 1
                 st.rerun()
-        if btns[2].button("🗑️", key=f"inv_del_{i}"):
+        if b3.button("🗑️", key=f"inv_del_{i}"):
             st.session_state.inventory.pop(i)
             st.rerun()
 
